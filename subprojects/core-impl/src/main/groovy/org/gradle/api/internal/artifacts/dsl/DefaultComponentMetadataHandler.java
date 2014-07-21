@@ -21,8 +21,10 @@ import org.gradle.api.Action;
 import org.gradle.api.InvalidUserCodeException;
 import org.gradle.api.artifacts.ComponentMetadataDetails;
 import org.gradle.api.artifacts.IvyModuleMetadata;
-import org.gradle.api.internal.artifacts.ModuleMetadataProcessor;
 import org.gradle.api.artifacts.dsl.ComponentMetadataHandler;
+import org.gradle.api.internal.artifacts.ModuleMetadataProcessor;
+import org.gradle.api.internal.artifacts.component.replacement.ComponentReplacementRules;
+import org.gradle.api.internal.artifacts.component.replacement.ComponentReplacements;
 import org.gradle.api.internal.artifacts.ivyservice.DefaultIvyModuleMetadata;
 import org.gradle.api.internal.artifacts.ivyservice.ModuleVersionResolveException;
 import org.gradle.api.internal.artifacts.metadata.IvyModuleVersionMetaData;
@@ -58,6 +60,17 @@ public class DefaultComponentMetadataHandler implements ComponentMetadataHandler
         if (!metadata.getStatusScheme().contains(metadata.getStatus())) {
             throw new ModuleVersionResolveException(metadata.getId(), "Unexpected status '" + metadata.getStatus() + "' specified for %s. Expected one of: " +  metadata.getStatusScheme());
         }
+    }
+
+    private final ComponentReplacements replacements = new ComponentReplacements();
+
+    public ComponentReplacementRules getReplacements() {
+        return replacements;
+    }
+
+    public ComponentMetadataHandler replacements(Action<ComponentReplacements> configure) {
+        configure.execute(replacements);
+        return this;
     }
 
     private void executeRuleClosures(ModuleVersionMetaData metadata, ComponentMetadataDetails details) {

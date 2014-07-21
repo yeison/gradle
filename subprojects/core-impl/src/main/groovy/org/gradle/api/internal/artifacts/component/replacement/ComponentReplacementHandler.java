@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.gradle.api.internal.artifacts;
 
-import org.gradle.api.internal.artifacts.component.replacement.ComponentReplacementHandler;
-import org.gradle.api.internal.artifacts.metadata.ModuleVersionMetaData;
+package org.gradle.api.internal.artifacts.component.replacement;
 
-public interface ModuleMetadataProcessor {
-    void process(ModuleVersionMetaData metadata);
-    ComponentReplacementHandler getReplacements();
+import org.gradle.api.artifacts.ModuleIdentifier;
+import org.gradle.api.specs.Spec;
+
+public interface ComponentReplacementHandler {
+    Spec<ModuleIdentifier> getReplacementSourceSelector(ModuleIdentifier replaceTarget);
+    Spec<ModuleIdentifier> getReplacementTargetSelector(ModuleIdentifier replaceSource);
 }

@@ -51,7 +51,7 @@ class DependencyGraphBuilderTest extends Specification {
     final ModuleVersionMetaData root = revision('root')
     final ModuleToModuleVersionResolver moduleResolver = Mock()
     final DependencyToConfigurationResolver dependencyToConfigurationResolver = new DefaultDependencyToConfigurationResolver()
-    final DependencyGraphBuilder builder = new DependencyGraphBuilder(dependencyResolver, moduleResolver, artifactResolver, conflictResolver, dependencyToConfigurationResolver)
+    final DependencyGraphBuilder builder = new DependencyGraphBuilder(dependencyResolver, moduleResolver, artifactResolver, conflictResolver, dependencyToConfigurationResolver, new DummyComponentReplacementHandler())
 
     def setup() {
         config(root, 'root', 'default')
