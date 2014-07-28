@@ -17,6 +17,7 @@ package org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph;
 
 import org.apache.ivy.core.module.descriptor.DependencyDescriptor;
 import org.apache.ivy.core.module.id.ModuleId;
+import org.gradle.api.Nullable;
 import org.gradle.api.artifacts.*;
 import org.gradle.api.artifacts.component.ComponentIdentifier;
 import org.gradle.api.artifacts.component.ComponentSelector;
@@ -191,7 +192,6 @@ public class DependencyGraphBuilder {
         private final ResolveState resolveState;
         private final ModuleVersionSpec selectorSpec;
         private final Set<ConfigurationNode> targetConfigurations = new LinkedHashSet<ConfigurationNode>();
-        private ModuleVersionResolveState targetModuleRevision;
 
         public DependencyEdge(ConfigurationNode from, DependencyMetaData dependencyMetaData, ModuleVersionSpec selectorSpec, ResolveState resolveState) {
             this.from = from;
@@ -207,15 +207,20 @@ public class DependencyGraphBuilder {
             return String.format("%s -> %s(%s)", from.toString(), dependencyMetaData.getRequested(), dependencyDescriptor);
         }
 
+        @Nullable
+        private ModuleVersionResolveState getTarget() {
+            return selector.targetModuleRevision;
+        }
+
         /**
          * @return The resolved module version
          */
         public ModuleVersionResolveState resolveModuleRevisionId() {
-            if (targetModuleRevision == null) {
-                targetModuleRevision = selector.resolveModuleRevisionId();
+            if (getTarget() == null) {
+                selector.resolveModuleRevisionId();
                 selector.getSelectedModule().addUnattachedDependency(this);
             }
-            return targetModuleRevision;
+            return getTarget();
         }
 
         public boolean isTransitive() {
@@ -223,7 +228,7 @@ public class DependencyGraphBuilder {
         }
 
         public void attachToTargetConfigurations() {
-            if (targetModuleRevision.state != ModuleState.Selected) {
+            if (getTarget().state != ModuleState.Selected) {
                 return;
             }
             calculateTargetConfigurations();
@@ -240,20 +245,19 @@ public class DependencyGraphBuilder {
                 targetConfiguration.removeIncomingEdge(this);
             }
             targetConfigurations.clear();
-            if (targetModuleRevision != null) {
+            if (getTarget() != null) {
                 selector.getSelectedModule().removeUnattachedDependency(this);
             }
         }
 
         public void restart(ModuleVersionResolveState selected) {
-            targetModuleRevision = selected;
             selector.restart(selected);
             attachToTargetConfigurations();
         }
 
         private void calculateTargetConfigurations() {
             targetConfigurations.clear();
-            ComponentMetaData targetModuleVersion = targetModuleRevision.getMetaData();
+            ComponentMetaData targetModuleVersion = getTarget().getMetaData();
             if (targetModuleVersion == null) {
                 // Broken version
                 return;
@@ -261,7 +265,7 @@ public class DependencyGraphBuilder {
 
             Set<ConfigurationMetaData> targetConfigurations = resolveState.dependencyToConfigurationResolver.resolveTargetConfigurations(dependencyMetaData, from.metaData, targetModuleVersion);
             for (ConfigurationMetaData targetConfiguration : targetConfigurations) {
-                ConfigurationNode targetConfigurationNode = resolveState.getConfigurationNode(targetModuleRevision, targetConfiguration.getName());
+                ConfigurationNode targetConfigurationNode = resolveState.getConfigurationNode(getTarget(), targetConfiguration.getName());
                 this.targetConfigurations.add(targetConfigurationNode);
             }
         }
@@ -851,9 +855,9 @@ public class DependencyGraphBuilder {
         ModuleVersionResolveState select(Collection<ModuleVersionResolveState> candidates, ModuleVersionResolveState root) {
             for (ConfigurationNode configuration : root.configurations) {
                 for (DependencyEdge outgoingEdge : configuration.outgoingEdges) {
-                    if (outgoingEdge.dependencyDescriptor.isForce() && candidates.contains(outgoingEdge.targetModuleRevision)) {
-                        outgoingEdge.targetModuleRevision.selectionReason = VersionSelectionReasons.FORCED;
-                        return outgoingEdge.targetModuleRevision;
+                    if (outgoingEdge.dependencyDescriptor.isForce() && candidates.contains(outgoingEdge.getTarget())) {
+                        outgoingEdge.getTarget().selectionReason = VersionSelectionReasons.FORCED;
+                        return outgoingEdge.getTarget();
                     }
                 }
             }
