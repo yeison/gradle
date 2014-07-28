@@ -261,7 +261,6 @@ public class DependencyGraphBuilder {
             targetModuleRevision = selected;
             selector.restart(selected);
             attachToTargetConfigurations();
-//            getSelected(); //TODO SF dig into
         }
 
         private void calculateTargetConfigurations() {
