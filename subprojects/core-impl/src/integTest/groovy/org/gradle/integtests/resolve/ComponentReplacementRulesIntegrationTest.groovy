@@ -23,6 +23,105 @@ import org.gradle.integtests.fixtures.AbstractIntegrationSpec
 
 class ComponentReplacementRulesIntegrationTest extends AbstractIntegrationSpec {
 
+    /*
+    Cases:
+
+    transitive:
+    a->b, only c->b in graph
+    a->b, only c->a in graph
+    a->b, c->a and d->b in graph
+
+    conflict + transitive:
+    a1,a2,x,b1,b2
+    a1,b1,a2,x,b2
+    b1,b2,x,a1,a2
+
+    verification:
+     - jars
+     - dependency report printed (String assert?)
+     - dependency insight (String assert?)
+     - resolution result modules
+     - resolved configuration
+    */
+
+    def setup() {
+        buildFile << """
+            configurations { conf }
+            repositories {
+                maven { url "${mavenRepo.uri}" }
+            }
+            task resolvedFiles(type: Copy) {
+                from configurations.conf
+                into 'resolved-files'
+            }
+        """
+    }
+
+    void resolvedFiles(String ... files) {
+        run("resolvedFiles")
+        file('resolved-files').listFiles() as Set == files as Set
+    }
+
+    def "ignores replacement if not in graph"() {
+        mavenModules('org:a:1', 'org:b:1')
+
+        buildFile << """
+            dependencies { conf 'org:a:1' }
+            dependencies.components.replacements.from('org:a:1').into('org:b:1')
+        """
+
+        expect:
+        resolvedFiles("a-1.jar")
+    }
+
+    def "ignores replacement if org does not match"() {
+        mavenModules('org:a:1', 'org:b:1', 'com:b:1')
+
+        buildFile << """
+            dependencies { conf 'org:a:1', 'com:b:1' }
+            dependencies.components.replacements.from('org:a:1').into('org:b:1')
+        """
+
+        expect:
+        resolvedFiles("a-1.jar", "b-1.jar")
+    }
+
+    def "ignores replacement if version does not match"() {
+        mavenModules('org:a:1', 'org:b:1', 'org:b:2')
+
+        buildFile << """
+            dependencies { conf 'org:a:1', 'org:b:2' }
+            dependencies.components.replacements.from('org:a:1').into('org:b:1')
+        """
+
+        expect:
+        resolvedFiles("a-1.jar", "b-2.jar")
+    }
+
+    def "just uses replacement if source not in graph"() {
+        mavenModules('org:a:1', 'org:b:1')
+
+        buildFile << """
+            dependencies { conf 'org:b:1' }
+            dependencies.components.replacements.from('org:a:1').into('org:b:1')
+        """
+
+        expect:
+        resolvedFiles("b-1.jar")
+    }
+
+    def "replaces single module"() {
+        mavenModules('org:a:1', 'org:b:1')
+
+        buildFile << """
+            dependencies { conf 'org:b:1', 'org:a:1' }
+            dependencies.components.replacements.from('org:a:1').into('org:b:1')
+        """
+
+        expect:
+        resolvedFiles("a-1.jar")
+    }
+
     def "selects highest guava over google collections"() {
         buildFile << """
             repositories { mavenCentral() }
