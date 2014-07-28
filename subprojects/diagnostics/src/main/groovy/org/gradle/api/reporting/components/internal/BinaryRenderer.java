@@ -18,17 +18,17 @@ package org.gradle.api.reporting.components.internal;
 
 import org.apache.commons.lang.StringUtils;
 import org.gradle.api.internal.file.FileResolver;
-import org.gradle.api.jvm.ProjectClassDirectoryBinary;
+import org.gradle.api.jvm.ClassDirectoryBinarySpec;
 import org.gradle.api.tasks.diagnostics.internal.text.TextReportBuilder;
 import org.gradle.logging.StyledTextOutput;
 import org.gradle.nativebinaries.*;
-import org.gradle.nativebinaries.test.ProjectNativeTestSuiteBinary;
+import org.gradle.nativebinaries.test.NativeTestSuiteBinarySpec;
 import org.gradle.reporting.ReportRenderer;
-import org.gradle.runtime.base.ProjectBinary;
-import org.gradle.runtime.jvm.ProjectJarBinary;
-import org.gradle.runtime.jvm.ProjectJvmLibraryBinary;
+import org.gradle.runtime.base.BinarySpec;
+import org.gradle.runtime.jvm.JarBinarySpec;
+import org.gradle.runtime.jvm.JvmLibraryBinarySpec;
 
-class BinaryRenderer extends ReportRenderer<ProjectBinary, TextReportBuilder> {
+class BinaryRenderer extends ReportRenderer<BinarySpec, TextReportBuilder> {
     private final FileResolver fileResolver;
 
     BinaryRenderer(FileResolver fileResolver) {
@@ -36,7 +36,7 @@ class BinaryRenderer extends ReportRenderer<ProjectBinary, TextReportBuilder> {
     }
 
     @Override
-    public void render(ProjectBinary binary, TextReportBuilder builder) {
+    public void render(BinarySpec binary, TextReportBuilder builder) {
         StyledTextOutput textOutput = builder.getOutput();
 
         textOutput.append(StringUtils.capitalize(binary.getDisplayName()));
@@ -47,39 +47,39 @@ class BinaryRenderer extends ReportRenderer<ProjectBinary, TextReportBuilder> {
 
         textOutput.formatln("    build using task: %s", binary.getBuildTask().getPath());
 
-        if (binary instanceof ProjectNativeBinary) {
-            ProjectNativeBinary nativeBinary = (ProjectNativeBinary) binary;
+        if (binary instanceof NativeBinarySpec) {
+            NativeBinarySpec nativeBinary = (NativeBinarySpec) binary;
             textOutput.formatln("    platform: %s", nativeBinary.getTargetPlatform().getName());
             textOutput.formatln("    build type: %s", nativeBinary.getBuildType().getName());
             textOutput.formatln("    flavor: %s", nativeBinary.getFlavor().getName());
             textOutput.formatln("    tool chain: %s", nativeBinary.getToolChain().getDisplayName());
-            if (binary instanceof ProjectNativeExecutableBinary) {
-                ProjectNativeExecutableBinary executableBinary = (ProjectNativeExecutableBinary) binary;
+            if (binary instanceof NativeExecutableBinarySpec) {
+                NativeExecutableBinarySpec executableBinary = (NativeExecutableBinarySpec) binary;
                 textOutput.formatln("    executable file: %s", fileResolver.resolveAsRelativePath(executableBinary.getExecutableFile()));
             }
-            if (binary instanceof ProjectNativeTestSuiteBinary) {
-                ProjectNativeTestSuiteBinary executableBinary = (ProjectNativeTestSuiteBinary) binary;
+            if (binary instanceof NativeTestSuiteBinarySpec) {
+                NativeTestSuiteBinarySpec executableBinary = (NativeTestSuiteBinarySpec) binary;
                 textOutput.formatln("    executable file: %s", fileResolver.resolveAsRelativePath(executableBinary.getExecutableFile()));
             }
-            if (binary instanceof ProjectSharedLibraryBinary) {
-                ProjectSharedLibraryBinary libraryBinary = (ProjectSharedLibraryBinary) binary;
+            if (binary instanceof SharedLibraryBinarySpec) {
+                SharedLibraryBinarySpec libraryBinary = (SharedLibraryBinarySpec) binary;
                 textOutput.formatln("    shared library file: %s", fileResolver.resolveAsRelativePath(libraryBinary.getSharedLibraryFile()));
             }
-            if (binary instanceof ProjectStaticLibraryBinary) {
-                ProjectStaticLibraryBinary libraryBinary = (ProjectStaticLibraryBinary) binary;
+            if (binary instanceof StaticLibraryBinarySpec) {
+                StaticLibraryBinarySpec libraryBinary = (StaticLibraryBinarySpec) binary;
                 textOutput.formatln("    static library file: %s", fileResolver.resolveAsRelativePath(libraryBinary.getStaticLibraryFile()));
             }
         }
 
-        if (binary instanceof ProjectJvmLibraryBinary) {
-            ProjectJvmLibraryBinary libraryBinary = (ProjectJvmLibraryBinary) binary;
+        if (binary instanceof JvmLibraryBinarySpec) {
+            JvmLibraryBinarySpec libraryBinary = (JvmLibraryBinarySpec) binary;
             textOutput.formatln("    tool chain: %s", libraryBinary.getToolChain().toString());
-            if (binary instanceof ProjectJarBinary) {
-                ProjectJarBinary jarBinary = (ProjectJarBinary) binary;
+            if (binary instanceof JarBinarySpec) {
+                JarBinarySpec jarBinary = (JarBinarySpec) binary;
                 textOutput.formatln("    Jar file: %s", fileResolver.resolveAsRelativePath(jarBinary.getJarFile()));
             }
-            if (binary instanceof ProjectClassDirectoryBinary) {
-                ProjectClassDirectoryBinary classDirectoryBinary = (ProjectClassDirectoryBinary) binary;
+            if (binary instanceof ClassDirectoryBinarySpec) {
+                ClassDirectoryBinarySpec classDirectoryBinary = (ClassDirectoryBinarySpec) binary;
                 textOutput.formatln("    classes dir: %s", fileResolver.resolveAsRelativePath(classDirectoryBinary.getClassesDir()));
                 textOutput.formatln("    resources dir: %s", fileResolver.resolveAsRelativePath(classDirectoryBinary.getResourcesDir()));
             }

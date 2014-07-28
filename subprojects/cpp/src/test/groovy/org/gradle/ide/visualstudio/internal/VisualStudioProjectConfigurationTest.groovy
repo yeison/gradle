@@ -27,8 +27,7 @@ import org.gradle.language.base.LanguageSourceSet
 import org.gradle.nativebinaries.*
 import org.gradle.nativebinaries.internal.DefaultFlavor
 import org.gradle.nativebinaries.internal.DefaultFlavorContainer
-
-import org.gradle.nativebinaries.internal.ProjectNativeExecutableBinaryInternal
+import org.gradle.nativebinaries.internal.NativeExecutableBinarySpecInternal
 import org.gradle.nativebinaries.language.PreprocessingTool
 import org.gradle.nativebinaries.platform.Platform
 import spock.lang.Specification
@@ -36,7 +35,7 @@ import spock.lang.Specification
 class VisualStudioProjectConfigurationTest extends Specification {
     final flavor = new DefaultFlavor("flavor1")
     def flavors = new DefaultFlavorContainer(new DirectInstantiator())
-    def exe = Mock(ProjectNativeExecutable) {
+    def exe = Mock(NativeExecutableSpec) {
         getFlavors() >> flavors
     }
     def extensions = Mock(ExtensionContainer)
@@ -192,6 +191,6 @@ class VisualStudioProjectConfigurationTest extends Specification {
         return deps
     }
 
-    interface TestExecutableBinary extends ProjectNativeExecutableBinaryInternal, ExtensionAware {}
+    interface TestExecutableBinary extends NativeExecutableBinarySpecInternal, ExtensionAware {}
 
 }

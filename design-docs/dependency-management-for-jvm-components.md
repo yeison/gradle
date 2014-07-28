@@ -221,14 +221,16 @@ Combining jvm-java and native (multi-lang) libraries in single project
     - Class file is removed when source is removed
     - Copied resource is removed when resource is removed
 - Can build native and JVM libraries in the same project
-  - `gradle assemble` builds each native library and each jvm library
+    - `gradle assemble` builds each native library and each jvm library
+- Can combine old and new JVM plugins in the same project
+    - `gradle assemble` builds both jars
 
 #### Open issues
 
-- Need to be able to navigate from a `JvmLibrary` to its binaries.
-- Need to be able to navigate from a `JvmLibraryBinary` to its tool chain.
 - Rework the native & JVM component models for consistency and extensibility.
+- Native package structure needs to be more consistent with JVM package structure.
 - When to document and announce the new JVM plugins?
+- Need to merge `SoftwareComponent` into `ProjectComponent`
 
 ## Feature: Custom plugin defines a custom library type
 
@@ -243,12 +245,12 @@ Development of this feature depends on the first 2 stories from the `unified-con
 
 Define a sample plugin that declares a custom library type:
     
-    interface SampleLibrary extends Library { ... }
-    class DefaultSampleLibrary implements SampleLibrary { ... }
+    interface SampleLibrary extends LibrarySpec { ... }
+    class DefaultSampleLibrary extends DefaultLibrarySpec implements SampleLibrary { ... }
 
     class MySamplePlugin implements Plugin<Project> {
         @RuleSource
-        @ComponentModel(SampleLibrary.class)
+        @ComponentModel(SampleLibrary.class, DefaultSampleLibrary.class)
         static class ComponentModel {
             @Model("mySample")
             SampleExtension createSampleExtension() {
@@ -258,48 +260,135 @@ Define a sample plugin that declares a custom library type:
             @Mutate
             void createSampleLibraryComponents(NamedItemCollectionBuilder<SampleLibrary> sampleLibraries, SampleExtension sampleExtension) {
                 for (String libraryName : sampleExtension.getLibraryNames()) {
-                    sampleLibraries.create(libraryName, DefaultSampleLibrary.class);
+                    sampleLibraries.create(libraryName);
             }
         }
     }
 
 Libraries are then visible in libraries and components containers:
 
-    // Library is visible in libraries and components containers
+    // Library is visible in component container
     assert projectComponents.withType(SampleLibrary).size() == 2
 
 A custom library type:
-- Extends or implements some public base `Library` type.
+- Extends or implements the public base `LibrarySpec` type.
 - Has no dependencies.
+- Has no sources.
 - Produces no artifacts.
+
+A custom library implementation:
+- Implements the custom library type
+- Extends `DefaultLibrarySpec`
+- Has a no-arg constructor
 
 #### Implementation Plan
 
-- If a plugin RuleSource has a @ComponentModel annotation
-    - Automatically apply the 'language-base' plugin
-    - Inspect any declared rules for ones that create Library instances via a `CollectionBuilder<? extends Library>`.
-    - The library-creation rule will be executed when closing the LibraryContainer. This mechanism can be specific to the language-base plugin.
-- TBD: elaborate this
+- ~~Rename the existing JVM and C++ model classes from `Project*` to `*Spec`.~~
+- ~~Introduce a `LibrarySpec` interface that both `NativeLibrarySpec` and `JvmLibrarySpec` extend.~~
+- ~~Add a default implementation of `LibrarySpec` named `DefaultLibrarySpec`. All custom library implementations extend this.~~
+- ~~Replace `NamedProjectComponentIdentifier` with `ComponentSpecIdentifier` everywhere.~~
+- ~~Add a new Sample for a custom plugin that uses model rules to add `SampleLibrary` instances to the `ComponentSpecContainer`~~
+    - Should apply the `ComponentModelBasePlugin`
+    - At the end of the story the sample will be adapted to use the new mechanism introduced
+    - Add an integration test for the sample
+- ~~Add a new incubating annotation to the 'language-base' project: `ComponentModel` with parameters defining the Library type and implementation classes~~
+- ~~Add functionality to the 'language-base' plugin that registers a hook that inspects every applied plugin for a nested (static) class with the @ComponentModel annotation~~
+    - Implement by making an `Action<? super PluginApplication>` available to the construction of `DefaultPluginContainer`, via `PluginServiceRegistry`.
+- ~~When a plugin is applied that has a nested class with the `@ComponentModel(SampleLibrary)` annotation:~~
+    - Automatically apply the `ComponentModelBasePlugin` before the plugin is applied
+    - Register a factory with the `ComponentSpecContainer` for creating `SampleLibrary` instances with the supplied implementation
+        - The factory implementation should generate a `ComponentSpecIdentifier` with the supplied name to instantiate the component
+    - Add a `ModelCreator` to the `ModelRegistry` that can present a `NamedItemCollectionBuilder<SampleLibrary>` view of the `ComponentSpecContainer`.
+- ~~Update `DefaultLibrarySpec` so that it has a public no-arg constructor~~
+    - ~~Inject the ComponentSpecIdentifier into the constructed library using a ThreadLocal and static setter method (see AbstractTask).~~
+
+#### Test cases
+
+- ~~Can register a component model with @Library without any rules for creating components (does not create components)~~
+- ~~Can create library instances via `NamedItemCollectionBuilder<LibrarySpec>` with a plugin that:~~
+    - ~~Already has the `ComponentModelBasePlugin` applied~~
+    - ~~Has a single nested class with both `@ComponentModel` and `@RuleSource` annotations~~
+    - ~~Has separate nested classes with `@ComponentModel` and `@RuleSource` annotations~~
+- ~~Rule for adding library instances can be in a separate plugin to the plugin declaring the component model~~
+- ~~Can define and create multiple component types in the same plugin with multiple `@ComponentModel` annotations~~
+- ~~Friendly error message when supplied library implementation:~~
+    - ~~Does not have a public no-arg constructor~~
+    - ~~Does not implement library type~~
+    - ~~Does not extend `DefaultLibrarySpec`~~
+- ~~Friendly error message when attempting to register the same library type with different implementations~~
+- ~~Custom libraries show up in components report~~
 
 #### Open issues
 
-- Need some public way to easily 'implement' Library and commons subtypes such as `ProjectComponent`. For example, a public default implementation that can
-be extended (should have no-args constructor) or generate the implementation from the interface.
 - Interaction with the `model { }` block.
-- Need some way to declare a language domain, without necessarily defining any particular component instances.
+- Injection of inputs into component constructor.
+
+### Story: Custom plugin uses rule to declare custom library type
+
+To avoid a future explosion of nested annotations, this story switches the mechanism for declaring a custom library type to use an
+annotated method, rather than an annotation.
+
+When a rule method with the `@ComponentType` annotation is found, the method is inspected to determine the type based on the generic
+type of the `ComponentTypeBuilder` input. The ComponentTypeBuilder implementation will then register a factory with the `ComponentSpecContainer`
+when the default implementation is set.
+
+### User visible changes
+
+    class MySamplePlugin implements Plugin<Project> {
+        @RuleSource
+        static class Rules {
+            @ComponentType
+            void defineType(ComponentTypeBuilder<SampleLibrary> builder) {
+                builder.setDefaultImplementation(DefaultSampleLibrary)
+            }
+        }
+    }
+
+### Test cases
+
+- Fails if a method with @ComponentType does not have a single parameter of type `ComponentTypeBuilder`
+- Fails if `setDefaultImplementation` is called multiple times
+    (should update `ComponentSpecContainer` to fail on attempt to register multiple factories for same type)
+- Empty @ComponentType method implementation is ok: no factory registered
 
 ### Story: Custom plugin defines binaries for each custom library
 
+This story introduces a mechanism by this a developer can declare the binaries that should be built for a custom library.
+This has 2 purposes:
+
+1. Provide a simple way for developers to specify the binaries that are relevant for a particular custom library
+2. Allow developers to declare the type of binaries produced for their custom plugin so they can be integrated with dependency management.
+
+While the first purpose is the primary one covered by this story, it is important that the mechanism also address the second point.
+
 Add a binary type to the sample plugin:
 
-    interface SampleBinary extends LibraryBinary {}
+    // Define the library
+    interface SampleLibrary extends LibrarySpec {
+        // Overload the getBinaries() method to declare the base binary type
+        DomainObjectSet<SampleBinary> getBinaries()
+    }
+    class DefaultSampleLibrary extends DefaultLibrarySpec<SampleBinary> implements SampleLibrary {}
 
-    class MySamplePlugin {
-        ...
+    // Define some binary types
+    interface SampleBinary extends LibraryBinarySpec {}
+    interface SampleBinarySubType extends SampleBinary {}
 
-        @Mutate
-        void createBinariesForSampleLibrary(CollectionBuilder<SampleBinary> binaries, SampleLibrary library) {
-            ... Create sample binaries for this library, one for each flavor. Add to the 'binaries' set.
+    // Define implementations for the binary types - these will go away at some point
+    class DefaultSampleBinary extends DefaultLibraryBinarySpec implements SampleBinary {}
+    class DefaultSampleBinarySubType extends DefaultLibraryBinarySpec implements SampleBinarySubType {}
+
+    class MySamplePlugin implements Plugin<Project> {
+        @ComponentModel(type = SampleLibrary, implementation = DefaultSampleLibrary)
+        @ComponentModelType(type = SampleBinary, implementation = DefaultSampleBinary)
+        @ComponentModelType(type = SampleBinarySubType, implementation = DefaultSampleBinarySubType)
+        @RuleSource
+        static class ComponentModel {
+            @Mutate
+            void createBinariesForSampleLibrary(NamedItemCollectionBuilder<SampleBinary> binaries, SampleLibrary library) {
+                binaries.create("${library.name}Binary")
+                binaries.create("${library.name}BinarySubType", SampleBinarySubType)
+            }
         }
     }
 
@@ -308,28 +397,55 @@ Binaries are now visible in the appropriate containers:
     // Binaries are visible in the appropriate containers
     // (assume 2 libraries & 2 binaries per library)
     assert binaries.withType(SampleBinary).size() == 4
-    assert libraries[0].binaries.size() == 2
+    assert binaries.withType(SampleBinarySubType).size() == 2
+    projectComponents.withType(LibrarySpec).each { assert binaries.size() == 2 }
 
 Running `gradle assemble` will execute lifecycle task for each library binary.
 
-A custom binary:
-- Extends or implements some public base `LibraryBinary` type.
+A custom binary type:
+- Extends public `LibraryBinarySpec` type.
+- Has no sources.
+- Is buildable.
 - Has some lifecycle task to build its outputs.
+
+A custom binary implementation:
+- Implements the custom binary type.
+- Extends `DefaultLibraryBinarySpec`.
+- Has a public no-arg constructor.
 
 #### Implementation Plan
 
-- For a library-producing plugin:
-    - Inspect any declared rules that take the created library type as input, and produce LibraryBinary instances
-      via a `CollectionBuilder<? extends LibraryBinary> parameter.
-- The binary-creation rule will be executed for each library when closing the BinariesContainer.
-- For each created binary, create the lifecycle task
+- Generify DefaultSampleLibrary so that the `getBinaries()` method can return a set of subtypes.
+- Introduce `LibraryBinarySpec` to represent binaries for produced from a `LibrarySpec`.
+    - Similarly, add `ApplicationBinarySpec`.
+    - Add a `DefaultLibraryBinarySpec` implementation that has a no-arg constructor.
+- Introduce a `@ComponentModelType` annotation that permits a factory to be registered for a type with the appropriate container
+    - For now, only types that extend `LibraryBinarySpec` are handled: anything else is an error.
+    - Assert that the implementation class extends `DefaultLibraryBinarySpec`, has a no-arg constructor and implements the type.
+    - Register a factory with the `BinaryContainer`.
+- When registering a library type from a `@ComponentModel` annotation
+    - Inspect the declared library type for an overloaded `getBinaries()` method, to determine the library binary type.
+    - TBD mechanism for iteration rule
+- For each created binary, create the lifecycle task.
 - Document in the user guide how to use this. Include some samples.
+
+#### Test cases
+
+- Can create binaries via rules that declare these as input:
+    - `NamedItemCollectionBuilder<BinarySpec>`
+    - `NamedItemCollectionBuilder<SampleBinary>`
+    - `NamedItemCollectionBuilder<SampleBinarySubType>`
+- TBD
 
 #### Open issues
 
-- Public mechanism to 'implement' Binary and common subtypes such as ProjectBinary.
+- Add 'plugin declares custom platform' story.
 - General mechanism to register a model collection and have rules that apply to each element of that collection.
-- Validation of binary names
+- Migrate the JVM and natives plugins to use this.
+    - Need to be able to declare the target platform for the component type.
+    - Need to declare default implementation.
+    - Need to expose general DSL for defining components of a given type.
+    - Need to attach source sets to components.
 
 ### Story: Custom plugin defines tasks from binaries
 
@@ -373,17 +489,18 @@ Change the sample plugin so that it compiles Java source to produce its binaries
 - Expose all native and jvm components through `project.components`.
 - Don't need to support publishing yet. Attaching one of these components to a publication can result in a 'this isn't supported yet' exception.
 
+```
+apply plugin: 'java'
 
-    apply plugin: 'java'
+// The library is visible
+assert jvm.libraries.main instanceof LegacyJvmLibrary
+assert libraries.size() == 1
+assert components.size() == 1
 
-    // The library is visible
-    assert jvm.libraries.main instanceof LegacyJvmLibrary
-    assert libraries.size() == 1
-    assert components.size() == 1
-
-    // The binary is visible
-    assert binaries.withType(ClassDirectoryBinary).size() == 1
-    assert binaries.withType(JarBinary).size() == 1
+// The binary is visible
+assert binaries.withType(ClassDirectoryBinary).size() == 1
+assert binaries.withType(JarBinary).size() == 1
+```
 
 #### Test cases
 
@@ -903,7 +1020,7 @@ TBD
       Or, if I'm building for Android, fail if the SDK is not installed.
     - Build everything. Fail if a certain binary cannot be built.
 - Lifecycle phase for binary to determine if binary can be built
-    - Replace current `ProjectBinary.buildable` flag
+    - Replace current `BinarySpec.buildable` flag
     - Attach useful error message explaining why the binary can't be built: no sources, no available toolchain, etc
     - Fail early when trying to build a binary that cannot be built
 - Better cleanup when components, binaries and source sets are removed or renamed.

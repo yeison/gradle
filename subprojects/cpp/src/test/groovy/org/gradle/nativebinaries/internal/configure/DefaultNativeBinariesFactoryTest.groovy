@@ -19,9 +19,9 @@ package org.gradle.nativebinaries.internal.configure
 import org.gradle.api.Action
 import org.gradle.internal.reflect.DirectInstantiator
 import org.gradle.nativebinaries.*
-import org.gradle.nativebinaries.internal.DefaultProjectNativeExecutable
-import org.gradle.nativebinaries.internal.DefaultProjectNativeLibrary
-import org.gradle.runtime.base.internal.DefaultNamedProjectComponentIdentifier
+import org.gradle.nativebinaries.internal.DefaultNativeExecutableSpec
+import org.gradle.nativebinaries.internal.DefaultNativeLibrarySpec
+import org.gradle.runtime.base.internal.DefaultComponentSpecIdentifier
 import org.gradle.nativebinaries.internal.resolve.NativeDependencyResolver
 import org.gradle.nativebinaries.platform.Platform
 import org.gradle.nativebinaries.toolchain.internal.ToolChainInternal
@@ -30,21 +30,21 @@ import spock.lang.Specification
 
 class DefaultNativeBinariesFactoryTest extends Specification {
     def resolver = Mock(NativeDependencyResolver)
-    Action<ProjectNativeBinary> configAction = Mock(Action)
+    Action<NativeBinarySpec> configAction = Mock(Action)
 
     def toolChain = Mock(ToolChainInternal)
     def platform = Mock(Platform)
     def buildType = Mock(BuildType)
     def flavor = Mock(Flavor)
 
-    def id = new DefaultNamedProjectComponentIdentifier("project", "name")
+    def id = new DefaultComponentSpecIdentifier("project", "name")
 
     def namingSchemeBuilder = new DefaultBinaryNamingSchemeBuilder().withComponentName("test")
     def factory = new DefaultNativeBinariesFactory(new DirectInstantiator(), configAction, resolver)
 
     def "creates binaries for executable"() {
         given:
-        def executable = new DefaultProjectNativeExecutable(id)
+        def executable = new DefaultNativeExecutableSpec(id)
 
         when:
         1 * configAction.execute(_)
@@ -54,7 +54,7 @@ class DefaultNativeBinariesFactoryTest extends Specification {
 
         then:
         executable.binaries.size() == 1
-        def binary = (executable.binaries as List)[0] as ProjectNativeBinary
+        def binary = (executable.binaries as List)[0] as NativeBinarySpec
         binary.name == "testExecutable"
         binary.toolChain == toolChain
         binary.targetPlatform == platform
@@ -64,7 +64,7 @@ class DefaultNativeBinariesFactoryTest extends Specification {
 
     def "creates binaries for library"() {
         given:
-        def library = new DefaultProjectNativeLibrary(id)
+        def library = new DefaultNativeLibrarySpec(id)
 
         when:
         2 * configAction.execute(_)
@@ -74,14 +74,14 @@ class DefaultNativeBinariesFactoryTest extends Specification {
 
         then:
         library.binaries.size() == 2
-        def sharedLibrary = (library.binaries.withType(ProjectSharedLibraryBinary) as List)[0] as ProjectNativeBinary
+        def sharedLibrary = (library.binaries.withType(SharedLibraryBinarySpec) as List)[0] as NativeBinarySpec
         sharedLibrary.name == "testSharedLibrary"
         sharedLibrary.toolChain == toolChain
         sharedLibrary.targetPlatform == platform
         sharedLibrary.buildType == buildType
         sharedLibrary.flavor == flavor
 
-        def staticLibrary = (library.binaries.withType(ProjectSharedLibraryBinary) as List)[0] as ProjectNativeBinary
+        def staticLibrary = (library.binaries.withType(SharedLibraryBinarySpec) as List)[0] as NativeBinarySpec
         staticLibrary.name == "testSharedLibrary"
         staticLibrary.toolChain == toolChain
         staticLibrary.targetPlatform == platform

@@ -16,6 +16,7 @@
 package org.gradle.language.base.plugins;
 
 import org.gradle.api.*;
+import org.gradle.api.internal.PolymorphicDomainObjectContainerModelAdapter;
 import org.gradle.api.internal.file.FileResolver;
 import org.gradle.api.internal.project.ProjectInternal;
 import org.gradle.api.plugins.ExtensionContainer;
@@ -29,20 +30,27 @@ import org.gradle.language.base.internal.LanguageRegistration;
 import org.gradle.language.base.internal.LanguageRegistry;
 import org.gradle.language.base.internal.plugins.CreateSourceTransformTask;
 import org.gradle.model.*;
+import org.gradle.model.collection.NamedItemCollectionBuilder;
+import org.gradle.model.internal.core.*;
+import org.gradle.model.internal.core.rule.describe.ModelRuleDescriptor;
+import org.gradle.model.internal.core.rule.describe.SimpleModelRuleDescriptor;
+import org.gradle.model.internal.registry.ModelRegistry;
 import org.gradle.runtime.base.BinaryContainer;
-import org.gradle.runtime.base.ProjectComponent;
-import org.gradle.runtime.base.ProjectComponentContainer;
-import org.gradle.runtime.base.internal.DefaultProjectComponentContainer;
-import org.gradle.runtime.base.internal.ProjectBinaryInternal;
+import org.gradle.runtime.base.ComponentSpec;
+import org.gradle.runtime.base.ComponentSpecContainer;
+import org.gradle.runtime.base.internal.BinarySpecInternal;
+import org.gradle.runtime.base.internal.DefaultComponentSpecContainer;
 import org.gradle.util.CollectionUtils;
 
 import javax.inject.Inject;
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 /**
  * Base plugin for language support.
  *
- * Adds a {@link org.gradle.runtime.base.ProjectComponentContainer} named {@code projectComponents} to the project.
+ * Adds a {@link org.gradle.runtime.base.ComponentSpecContainer} named {@code projectComponents} to the project.
  * Adds a {@link org.gradle.runtime.base.BinaryContainer} named {@code binaries} to the project.
  * Adds a {@link org.gradle.language.base.ProjectSourceSet} named {@code sources} to the project.
  *
@@ -52,18 +60,46 @@ import java.util.Set;
 public class ComponentModelBasePlugin implements Plugin<ProjectInternal> {
 
     private final Instantiator instantiator;
+    private final ModelRegistry modelRegistry;
 
     @Inject
-    public ComponentModelBasePlugin(Instantiator instantiator) {
+    public ComponentModelBasePlugin(Instantiator instantiator, ModelRegistry modelRegistry) {
         this.instantiator = instantiator;
+        this.modelRegistry = modelRegistry;
     }
 
     public void apply(final ProjectInternal project) {
         project.getPlugins().apply(LanguageBasePlugin.class);
 
         LanguageRegistry languageRegistry = project.getExtensions().create("languages", DefaultLanguageRegistry.class);
-        project.getExtensions().create("projectComponents", DefaultProjectComponentContainer.class, instantiator);
         ProjectSourceSet sources = project.getExtensions().getByType(ProjectSourceSet.class);
+
+        DefaultComponentSpecContainer components = project.getExtensions().create("projectComponents", DefaultComponentSpecContainer.class, instantiator);
+        final PolymorphicDomainObjectContainerModelAdapter<ComponentSpec, ComponentSpecContainer> componentSpecContainerAdapter = new PolymorphicDomainObjectContainerModelAdapter<ComponentSpec, ComponentSpecContainer>(
+                components, ModelType.of(ComponentSpecContainer.class), ComponentSpec.class
+        );
+
+        modelRegistry.create(new ModelCreator() {
+            public ModelPath getPath() {
+                return ModelPath.path("projectComponents");
+            }
+
+            public ModelPromise getPromise() {
+                return componentSpecContainerAdapter.asPromise();
+            }
+
+            public ModelAdapter create(Inputs inputs) {
+                return componentSpecContainerAdapter;
+            }
+
+            public List<ModelReference<?>> getInputs() {
+                return Collections.emptyList();
+            }
+
+            public ModelRuleDescriptor getDescriptor() {
+                return new SimpleModelRuleDescriptor("Project.<init>.projectComponents()");
+            }
+        });
 
         // TODO:DAZ Convert to model rules
         createLanguageSourceSets(sources, languageRegistry, project.getFileResolver());
@@ -104,15 +140,10 @@ public class ComponentModelBasePlugin implements Plugin<ProjectInternal> {
         }
 
         @Model
-        ProjectComponentContainer projectComponents(ExtensionContainer extensions) {
-            return extensions.getByType(ProjectComponentContainer.class);
-        }
-
-        @Model
         Set<String> projectComponentNames(ExtensionContainer extensions) {
-            ProjectComponentContainer components = extensions.getByType(ProjectComponentContainer.class);
-            return CollectionUtils.collect(components, new Transformer<String, ProjectComponent>() {
-                public String transform(ProjectComponent original) {
+            ComponentSpecContainer components = extensions.getByType(ComponentSpecContainer.class);
+            return CollectionUtils.collect(components, new Transformer<String, ComponentSpec>() {
+                public String transform(ComponentSpec original) {
                     return original.getName();
                 }
             });
@@ -127,17 +158,21 @@ public class ComponentModelBasePlugin implements Plugin<ProjectInternal> {
         }
 
         @Mutate
-        void attachFunctionalSourceSetToComponents(ProjectComponentContainer components, ProjectSourceSet sources) {
-            for (ProjectComponent component : components) {
+        void attachFunctionalSourceSetToComponents(ComponentSpecContainer components, ProjectSourceSet sources) {
+            for (ComponentSpec component : components) {
                 component.source(sources.getByName(component.getName()));
             }
         }
+
+        // Required because creation of Binaries from Components is not yet wired into the infrastructure
+        @Mutate
+        void closeComponentsForBinaries(NamedItemCollectionBuilder<Task> tasks, ComponentSpecContainer components) {}
 
         // Finalizing here, as we need this to run after any 'assembling' task (jar, link, etc) is created.
         @Finalize
         void createSourceTransformTasks(final TaskContainer tasks, final BinaryContainer binaries, LanguageRegistry languageRegistry) {
             for (LanguageRegistration language : languageRegistry) {
-                for (ProjectBinaryInternal binary : binaries.withType(ProjectBinaryInternal.class)) {
+                for (BinarySpecInternal binary : binaries.withType(BinarySpecInternal.class)) {
                     final CreateSourceTransformTask createRule = new CreateSourceTransformTask(language);
                     createRule.createCompileTasksForBinary(tasks, binary);
                 }

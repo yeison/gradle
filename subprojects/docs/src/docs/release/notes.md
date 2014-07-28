@@ -135,6 +135,10 @@ The generated POM file will contain the following content:
 
 This feature addresses [GRADLE-2945] was contributed by [Biswa Dahal](https://github.com/ffos).
 
+### Task visibility is exposed in Tooling API
+
+Tasks and selectors accessible from Tooling API now carry an information about their [visibility](javadoc/org/gradle/tooling/model/Launchable.html).
+
 ## Promoted features
 
 Promoted features are features that were incubating in previous versions of Gradle but are now supported and subject to backwards compatibility.
@@ -179,6 +183,15 @@ to use explicitly HTTP for connecting the Bintray's JCenter repository you can s
             url = "http://jcenter.bintray.com/"
         }
     }
+
+### Default FindBugs version was upgraded to 3.0.0
+
+This way the FindBugs plugin works out of the box with newer Java versions (most notably: Java 1.8).
+If you use Java 1.6 you need to configure an older version of FindBugs explicitly:
+
+    findbugs {
+        toolVersion = '2.0.3'
+    }
  
 ### Changes to incubating native language plugins
 
@@ -198,6 +211,7 @@ TBD - make this more explicit re. what is actually not longer available.
 - NativeTestSuiteBinary no longer extends NativeExecutableBinary
 - Merged TestSuiteExecutableBinary into NativeTestSuiteBinary
 - Renamed CUnitTestSuiteExecutableBinary -> CUnitTestSuiteBinary
+- Renamed ProjectNativeLibrary -> NativeLibrarySpec
 - TODO: document all of the changes once they are finalised
 
 #### Changes to native cross compilation and custom platforms support
@@ -336,6 +350,11 @@ This applies to all named domain object containers in Gradle.
 
 TODO - replacement (@RuleSource) detail
 
+### TaskParameter replaced with TaskExecutionRequest
+
+- Incubating class `TaskParameter` has been replaced with `TaskExecutionRequest`.
+- Incubating property `StartParameter.taskParameters` has been replaced with `StartParameter.taskRequests`.
+
 ## External contributions
 
 We would like to thank the following community members for making contributions to this release of Gradle.
@@ -353,6 +372,7 @@ We would like to thank the following community members for making contributions 
 * [Björn Kautler](https://github.com/Vampire) - Changing rootProject projectDir from settings.gradle does not work (GRADLE-3086)
 * [Viktor Nordling](https://github.com/viktornordling) - Don't re-check repository for missing module every 24 hours (GRADLE-3107)
 * [Harald Schmitt](https://github.com/surfing) - Restrict SFTP authentication attempts to password (GRADLE-3133)
+* [Joern Huxhorn](https://github.com/huxi) - Documentation improvements.
 
 We love getting contributions from the Gradle community. For information on contributing, please see [gradle.org/contribute](http://gradle.org/contribute).
 

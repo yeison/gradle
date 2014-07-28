@@ -32,9 +32,9 @@ import org.gradle.language.c.plugins.CLangPlugin;
 import org.gradle.model.Mutate;
 import org.gradle.model.Path;
 import org.gradle.model.RuleSource;
-import org.gradle.nativebinaries.ProjectNativeBinary;
-import org.gradle.nativebinaries.ProjectNativeComponent;
-import org.gradle.nativebinaries.internal.ProjectNativeBinaryInternal;
+import org.gradle.nativebinaries.NativeComponentSpec;
+import org.gradle.nativebinaries.NativeBinarySpec;
+import org.gradle.nativebinaries.internal.NativeBinarySpecInternal;
 import org.gradle.nativebinaries.internal.resolve.NativeDependencyResolver;
 import org.gradle.nativebinaries.language.internal.DefaultPreprocessingTool;
 import org.gradle.nativebinaries.test.TestSuiteContainer;
@@ -46,10 +46,10 @@ import org.gradle.nativebinaries.test.cunit.tasks.GenerateCUnitLauncher;
 import org.gradle.nativebinaries.test.plugins.NativeBinariesTestPlugin;
 import org.gradle.nativebinaries.toolchain.internal.ToolChainInternal;
 import org.gradle.runtime.base.BinaryContainer;
-import org.gradle.runtime.base.NamedProjectComponentIdentifier;
+import org.gradle.runtime.base.ComponentSpecIdentifier;
 import org.gradle.runtime.base.internal.BinaryNamingScheme;
 import org.gradle.runtime.base.internal.DefaultBinaryNamingSchemeBuilder;
-import org.gradle.runtime.base.internal.DefaultNamedProjectComponentIdentifier;
+import org.gradle.runtime.base.internal.DefaultComponentSpecIdentifier;
 
 import java.io.File;
 
@@ -74,17 +74,17 @@ public class CUnitPlugin implements Plugin<ProjectInternal> {
         private static final String CUNIT_LAUNCHER_SOURCE_SET = "cunitLauncher";
 
         @Mutate
-        public void createCUnitTestSuitePerComponent(TestSuiteContainer testSuites, NamedDomainObjectSet<ProjectNativeComponent> components, ServiceRegistry serviceRegistry) {
+        public void createCUnitTestSuitePerComponent(TestSuiteContainer testSuites, NamedDomainObjectSet<NativeComponentSpec> components, ServiceRegistry serviceRegistry) {
             Instantiator instantiator = serviceRegistry.get(Instantiator.class);
-            for (ProjectNativeComponent component : components) {
+            for (NativeComponentSpec component : components) {
                 testSuites.add(createCUnitTestSuite(component, instantiator));
             }
         }
 
-        private CUnitTestSuite createCUnitTestSuite(final ProjectNativeComponent testedComponent, Instantiator instantiator) {
+        private CUnitTestSuite createCUnitTestSuite(final NativeComponentSpec testedComponent, Instantiator instantiator) {
             String suiteName = String.format("%sTest", testedComponent.getName());
             String path = testedComponent.getProjectPath();
-            NamedProjectComponentIdentifier id = new DefaultNamedProjectComponentIdentifier(path, suiteName);
+            ComponentSpecIdentifier id = new DefaultComponentSpecIdentifier(path, suiteName);
             return instantiator.newInstance(DefaultCUnitTestSuite.class, id, testedComponent);
         }
 
@@ -131,7 +131,7 @@ public class CUnitPlugin implements Plugin<ProjectInternal> {
         @Mutate
         public void createCUnitTestBinaries(final BinaryContainer binaries, TestSuiteContainer testSuites, @Path("buildDir") File buildDir, ServiceRegistry serviceRegistry) {
             for (final CUnitTestSuite cUnitTestSuite : testSuites.withType(CUnitTestSuite.class)) {
-                for (ProjectNativeBinary testedBinary : cUnitTestSuite.getTestedComponent().getBinaries()) {
+                for (NativeBinarySpec testedBinary : cUnitTestSuite.getTestedComponent().getBinaries()) {
 
                     CUnitTestSuiteBinary testBinary = createTestBinary(serviceRegistry, cUnitTestSuite, testedBinary);
 
@@ -143,8 +143,8 @@ public class CUnitPlugin implements Plugin<ProjectInternal> {
             }
         }
 
-        private CUnitTestSuiteBinary createTestBinary(ServiceRegistry serviceRegistry, CUnitTestSuite cUnitTestSuite, ProjectNativeBinary testedBinary) {
-            BinaryNamingScheme namingScheme = new DefaultBinaryNamingSchemeBuilder(((ProjectNativeBinaryInternal) testedBinary).getNamingScheme())
+        private CUnitTestSuiteBinary createTestBinary(ServiceRegistry serviceRegistry, CUnitTestSuite cUnitTestSuite, NativeBinarySpec testedBinary) {
+            BinaryNamingScheme namingScheme = new DefaultBinaryNamingSchemeBuilder(((NativeBinarySpecInternal) testedBinary).getNamingScheme())
                     .withComponentName(cUnitTestSuite.getBaseName())
                     .withTypeString("CUnitExe").build();
 
@@ -154,7 +154,7 @@ public class CUnitPlugin implements Plugin<ProjectInternal> {
         }
 
         private void configure(CUnitTestSuiteBinary testBinary, File buildDir) {
-            BinaryNamingScheme namingScheme = ((ProjectNativeBinaryInternal) testBinary).getNamingScheme();
+            BinaryNamingScheme namingScheme = ((NativeBinarySpecInternal) testBinary).getNamingScheme();
             File binaryOutputDir = new File(new File(buildDir, "binaries"), namingScheme.getOutputDirectoryBase());
             String baseName = testBinary.getComponent().getBaseName();
 

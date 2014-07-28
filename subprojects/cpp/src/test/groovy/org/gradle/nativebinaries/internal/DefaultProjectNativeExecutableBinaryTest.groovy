@@ -15,9 +15,10 @@
  */
 
 package org.gradle.nativebinaries.internal
+
 import org.gradle.runtime.base.internal.DefaultBinaryNamingScheme
 import org.gradle.nativebinaries.BuildType
-import org.gradle.nativebinaries.ProjectNativeExecutable
+import org.gradle.nativebinaries.NativeExecutableSpec
 import org.gradle.nativebinaries.internal.resolve.NativeDependencyResolver
 import org.gradle.nativebinaries.platform.Platform
 import org.gradle.nativebinaries.toolchain.internal.ToolChainInternal
@@ -28,10 +29,10 @@ class DefaultProjectNativeExecutableBinaryTest extends Specification {
 
     def "has useful string representation"() {
         given:
-        def executable = Stub(ProjectNativeExecutable)
+        def executable = Stub(NativeExecutableSpec)
 
         when:
-        def binary = new DefaultProjectNativeExecutableBinary(executable, new DefaultFlavor("flavorOne"), Stub(ToolChainInternal), Stub(Platform), Stub(BuildType), namingScheme, Mock(NativeDependencyResolver))
+        def binary = new DefaultNativeExecutableBinarySpec(executable, new DefaultFlavor("flavorOne"), Stub(ToolChainInternal), Stub(Platform), Stub(BuildType), namingScheme, Mock(NativeDependencyResolver))
 
         then:
         binary.toString() == "executable 'bigOne:executable'"

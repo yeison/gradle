@@ -19,8 +19,8 @@ import org.gradle.api.internal.DefaultDomainObjectSet
 import org.gradle.api.internal.file.FileResolver
 import org.gradle.internal.reflect.DirectInstantiator
 import org.gradle.language.base.LanguageSourceSet
-import org.gradle.nativebinaries.ProjectNativeExecutable
-import org.gradle.nativebinaries.internal.ProjectNativeExecutableBinaryInternal
+import org.gradle.nativebinaries.NativeExecutableSpec
+import org.gradle.nativebinaries.internal.NativeExecutableBinarySpecInternal
 import spock.lang.Specification
 
 class VisualStudioProjectRegistryTest extends Specification {
@@ -29,10 +29,10 @@ class VisualStudioProjectRegistryTest extends Specification {
     def visualStudioProjectMapper = Mock(VisualStudioProjectMapper)
     def registry = new VisualStudioProjectRegistry(fileResolver, visualStudioProjectMapper, new DirectInstantiator())
 
-    def executable = Mock(ProjectNativeExecutable)
+    def executable = Mock(NativeExecutableSpec)
 
     def "creates a matching visual studio project configuration for NativeBinary"() {
-        def executableBinary = Mock(ProjectNativeExecutableBinaryInternal)
+        def executableBinary = Mock(NativeExecutableBinarySpecInternal)
         when:
         visualStudioProjectMapper.mapToConfiguration(executableBinary) >> new VisualStudioProjectMapper.ProjectConfigurationNames("vsProject", "vsConfig", "vsPlatform")
         executableBinary.component >> executable
@@ -51,8 +51,8 @@ class VisualStudioProjectRegistryTest extends Specification {
     }
 
     def "returns same visual studio project configuration for native binaries that share project name"() {
-        def executableBinary1 = Mock(ProjectNativeExecutableBinaryInternal)
-        def executableBinary2 = Mock(ProjectNativeExecutableBinaryInternal)
+        def executableBinary1 = Mock(NativeExecutableBinarySpecInternal)
+        def executableBinary2 = Mock(NativeExecutableBinarySpecInternal)
 
         when:
         visualStudioProjectMapper.mapToConfiguration(executableBinary1) >> new VisualStudioProjectMapper.ProjectConfigurationNames("vsProject", "vsConfig1", "vsPlatform")
@@ -83,8 +83,8 @@ class VisualStudioProjectRegistryTest extends Specification {
     }
 
     def "visual studio project contains sources for native binaries for all configurations"() {
-        def executableBinary1 = Mock(ProjectNativeExecutableBinaryInternal)
-        def executableBinary2 = Mock(ProjectNativeExecutableBinaryInternal)
+        def executableBinary1 = Mock(NativeExecutableBinarySpecInternal)
+        def executableBinary2 = Mock(NativeExecutableBinarySpecInternal)
         def sourceCommon = Mock(LanguageSourceSet)
         def source1 = Mock(LanguageSourceSet)
         def source2 = Mock(LanguageSourceSet)

@@ -23,10 +23,10 @@ import org.gradle.api.internal.plugins.ExtensionContainerInternal
 import org.gradle.api.internal.project.ProjectInternal
 import org.gradle.nativebinaries.NativeLibraryBinary
 import org.gradle.nativebinaries.NativeLibraryRequirement
-import org.gradle.nativebinaries.ProjectNativeBinary
-import org.gradle.nativebinaries.ProjectNativeLibrary
+import org.gradle.nativebinaries.NativeBinarySpec
+import org.gradle.nativebinaries.NativeLibrarySpec
 import org.gradle.nativebinaries.internal.ProjectNativeLibraryRequirement
-import org.gradle.runtime.base.ProjectComponentContainer
+import org.gradle.runtime.base.ComponentSpecContainer
 import spock.lang.Specification
 
 // TODO:DAZ Improve test names, at the very least
@@ -34,9 +34,9 @@ class ProjectLibraryBinaryLocatorTest extends Specification {
     def project = Mock(ProjectInternal)
     def projectLocator = Mock(ProjectLocator)
     def requirement = Mock(NativeLibraryRequirement)
-    def library = Mock(ProjectNativeLibrary)
-    def binary = Mock(ProjectNativeLibraryBinary)
-    def binaries = new DefaultDomainObjectSet(ProjectNativeBinary, [binary])
+    def library = Mock(NativeLibrarySpec)
+    def binary = Mock(MockNativeLibraryBinary)
+    def binaries = new DefaultDomainObjectSet(NativeBinarySpec, [binary])
     def convertedBinaries = new DefaultDomainObjectSet(NativeLibraryBinary, [binary])
     def locator = new ProjectLibraryBinaryLocator(projectLocator)
 
@@ -136,14 +136,14 @@ class ProjectLibraryBinaryLocatorTest extends Specification {
 
     private findLibraryContainer(ProjectInternal project) {
         def extensions = Mock(ExtensionContainerInternal)
-        def components = Mock(ProjectComponentContainer)
+        def components = Mock(ComponentSpecContainer)
         def libraryContainer = Mock(NamedDomainObjectSet)
         project.getExtensions() >> extensions
-        extensions.findByType(ProjectComponentContainer) >> components
-        components.withType(ProjectNativeLibrary) >> libraryContainer
+        extensions.findByType(ComponentSpecContainer) >> components
+        components.withType(NativeLibrarySpec) >> libraryContainer
         return libraryContainer
     }
 
-    interface ProjectNativeLibraryBinary extends ProjectNativeBinary, NativeLibraryBinary {}
+    interface MockNativeLibraryBinary extends NativeBinarySpec, NativeLibraryBinary {}
 
 }

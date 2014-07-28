@@ -21,14 +21,14 @@ import org.gradle.api.internal.ClassGeneratorBackedInstantiator
 import org.gradle.internal.reflect.DirectInstantiator
 import org.gradle.language.base.LanguageSourceSet
 import org.gradle.language.base.internal.DefaultFunctionalSourceSet
-import org.gradle.runtime.base.NamedProjectComponentIdentifier
-import org.gradle.runtime.base.internal.DefaultNamedProjectComponentIdentifier
+import org.gradle.runtime.base.ComponentSpecIdentifier
+import org.gradle.runtime.base.internal.DefaultComponentSpecIdentifier
 import spock.lang.Specification
 
 class DefaultNativeComponentTest extends Specification {
     def instantiator = new ClassGeneratorBackedInstantiator(new AsmBackedClassGenerator(), new DirectInstantiator())
-    def id = new DefaultNamedProjectComponentIdentifier("project", "name")
-    def component = new TestProjectNativeComponent(id)
+    def id = new DefaultComponentSpecIdentifier("project", "name")
+    def component = new TestNativeComponentSpec(id)
 
     def "uses all source sets from a functional source set"() {
         given:
@@ -63,8 +63,8 @@ class DefaultNativeComponentTest extends Specification {
         component.chooseFlavors([flavor("flavor1"), flavor("flavor2"), flavor("flavor3"), flavor("flavor4")] as Set)*.name == ["flavor1", "flavor2", "flavor3"]
     }
 
-    class TestProjectNativeComponent extends AbstractTargetedProjectNativeComponent {
-        TestProjectNativeComponent(NamedProjectComponentIdentifier id) {
+    class TestNativeComponentSpec extends AbstractTargetedNativeComponentSpec {
+        TestNativeComponentSpec(ComponentSpecIdentifier id) {
             super(id)
         }
 

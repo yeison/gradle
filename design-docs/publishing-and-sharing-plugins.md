@@ -617,7 +617,7 @@ The plugin portal resolver returns a payload indicating that this plugin is non-
 
 Much of the error handling is shared with handling of declarative plugins.
 
-See “resolution process” section in “implementation plan” for details on how the plugin should be loaded.
+Note: the class loading/visibility required by this story does not reflect the final goal. See the first story of the next milestone.
 
 ### Test Coverage
 
@@ -631,8 +631,6 @@ See “resolution process” section in “implementation plan” for details on
     - Add a `buildscript {}` dependency on java library A @ version 1.0
     - Add a `plugins {}` dependency on a non-declarative plugin that depends on A @ version 2.0
     - Assert that _only_ version 2.0 was resolved
-- Plugin implementation classes are not visible to script plugins applied to target script
-- Plugin implementation classes are not visible to build scripts of child projects
 - ~~Plugin can access classes from Gradle API~~
 - ~~Plugin can access classes from Gradle core plugins~~
 - ~~Plugin cannot access Gradle internal implementation classes~~
@@ -674,12 +672,6 @@ Implementation of handling this response should be cross cutting.
 
 - Unsupported Gradle version response fails build, with message provided by portal forwarded to user.
 
-## Story: User is notified of use of 'deprecated' plugin
-
-## Story: All plugins are resolved before any plugin is applied to a target
-
-Before actually applying plugins (potentially expensive), all required plugins should be resolved in the spirit of fail fast.
-
 ### Test Coverage
 
 - Plugins are applied alphabetically based on name
@@ -687,8 +679,6 @@ Before actually applying plugins (potentially expensive), all required plugins s
 ## Story: Plugin resolution is cached between builds
 
 i.e. responses from plugins.gradle.org are cached to disk (`--offline` support)
-
-## Story: Script plugins are able to use `plugins {}`
 
 ## Story: Error message for unknown plugin or plugin version includes link to relevant human search interfaces
 
@@ -714,7 +704,27 @@ Story is predicated on plugins.gradle.org providing a searchable interface for p
 
 Note: Plugin authors cannot really contribution to plugins.gradle.org at this point. The content will be “hand curated”.
 
-# Milestone 2 - declarative plugins
+# Milestone 2 - more flexible usage
+
+## Story: Classes introduced to build script exclusively for use by `plugins {}` are not inherited
+
+### Test Coverage
+
+- Plugin implementation classes are not visible to script plugins applied to target script
+- Plugin implementation classes are not visible to build scripts of child projects
+
+## Story: Script plugins are able to use `plugins {}`
+
+## Story: All plugins are resolved before any plugin is applied to a target
+
+Before actually applying plugins (potentially expensive), all required plugins should be resolved in the spirit of fail fast.
+
+## Story: User is notified of use of 'deprecated' plugin
+
+
+# Milestone 3 - declarative plugins
+
+## Story: Script plugins are able to use `plugins {}`
 
 ## Story: Plugin author uses plugin development plugin to build a plugin
 
@@ -763,7 +773,7 @@ Plugin authors should be able to write their plugin in such a way that it works 
 
 # Story: Author of declarative plugin builds plugin that depends on non-core declarative plugin
 
-# Milestone 3 - “parkable”
+# Milestone 4 - “parkable”
 
 ## Story: Gradle is routinely tested against real plugins.gradle.org codebase
 

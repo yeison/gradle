@@ -26,14 +26,14 @@ import org.gradle.model.Mutate;
 import org.gradle.model.RuleSource;
 import org.gradle.runtime.base.BinaryContainer;
 import org.gradle.runtime.base.internal.DefaultBinaryContainer;
-import org.gradle.runtime.base.internal.ProjectBinaryInternal;
+import org.gradle.runtime.base.internal.BinarySpecInternal;
 
 import javax.inject.Inject;
 
 /**
  * Base plugin for language support.
  *
- * Adds a {@link org.gradle.runtime.base.ProjectComponentContainer} named {@code projectComponents} to the project. Adds a {@link org.gradle.runtime.base.BinaryContainer} named {@code binaries} to the
+ * Adds a {@link org.gradle.runtime.base.ComponentSpecContainer} named {@code projectComponents} to the project. Adds a {@link org.gradle.runtime.base.BinaryContainer} named {@code binaries} to the
  * project. Adds a {@link org.gradle.language.base.ProjectSourceSet} named {@code sources} to the project.
  *
  * For each binary instance added to the binaries container, registers a lifecycle task to create that binary.
@@ -76,7 +76,7 @@ public class LanguageBasePlugin implements Plugin<Project> {
         void createLifecycleTaskForBinary(TaskContainer tasks, BinaryContainer binaries) {
 
             Task assembleTask = tasks.getByName(LifecycleBasePlugin.ASSEMBLE_TASK_NAME);
-            for (ProjectBinaryInternal binary : binaries.withType(ProjectBinaryInternal.class)) {
+            for (BinarySpecInternal binary : binaries.withType(BinarySpecInternal.class)) {
                 if (!binary.isLegacyBinary()) {
                     Task binaryLifecycleTask = tasks.create(binary.getNamingScheme().getLifecycleTaskName());
                     binaryLifecycleTask.setGroup(LifecycleBasePlugin.BUILD_GROUP);

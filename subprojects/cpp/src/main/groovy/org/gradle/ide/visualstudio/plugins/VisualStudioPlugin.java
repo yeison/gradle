@@ -39,8 +39,8 @@ import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.model.Model;
 import org.gradle.model.Mutate;
 import org.gradle.model.RuleSource;
-import org.gradle.nativebinaries.ProjectNativeBinary;
-import org.gradle.nativebinaries.ProjectNativeComponent;
+import org.gradle.nativebinaries.NativeComponentSpec;
+import org.gradle.nativebinaries.NativeBinarySpec;
 import org.gradle.nativebinaries.internal.resolve.ProjectLocator;
 import org.gradle.nativebinaries.plugins.NativeComponentModelPlugin;
 import org.gradle.runtime.base.BinaryContainer;
@@ -84,7 +84,7 @@ public class VisualStudioPlugin implements Plugin<ProjectInternal> {
         @Mutate
         @SuppressWarnings("GroovyUnusedDeclaration")
         public static void createVisualStudioModelForBinaries(VisualStudioExtensionInternal visualStudioExtension, BinaryContainer binaryContainer) {
-            for (ProjectNativeBinary binary : binaryContainer.withType(ProjectNativeBinary.class)) {
+            for (NativeBinarySpec binary : binaryContainer.withType(NativeBinarySpec.class)) {
                 VisualStudioProjectConfiguration configuration = visualStudioExtension.getProjectRegistry().addProjectConfiguration(binary);
 
                 // Only create a solution if one of the binaries is buildable
@@ -110,7 +110,7 @@ public class VisualStudioPlugin implements Plugin<ProjectInternal> {
                 vsSolution.builtBy(createSolutionTask(tasks, vsSolution));
 
                 // Lifecycle task for component
-                ProjectNativeComponent component = vsSolution.getComponent();
+                NativeComponentSpec component = vsSolution.getComponent();
                 Task lifecycleTask = tasks.maybeCreate(component.getName() + "VisualStudio");
                 lifecycleTask.dependsOn(vsSolution);
                 lifecycleTask.setGroup("IDE");

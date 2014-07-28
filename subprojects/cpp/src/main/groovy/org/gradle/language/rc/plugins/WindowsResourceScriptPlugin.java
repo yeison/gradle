@@ -25,10 +25,10 @@ import org.gradle.language.base.plugins.ComponentModelBasePlugin;
 import org.gradle.language.internal.NativeLanguageRegistration;
 import org.gradle.language.rc.WindowsResourceSet;
 import org.gradle.language.rc.internal.DefaultWindowsResourceSet;
-import org.gradle.nativebinaries.ProjectNativeBinary;
+import org.gradle.nativebinaries.NativeBinarySpec;
 import org.gradle.nativebinaries.language.internal.DefaultPreprocessingTool;
 import org.gradle.nativebinaries.language.internal.WindowsResourcesCompileTaskConfig;
-import org.gradle.runtime.base.ProjectBinary;
+import org.gradle.runtime.base.BinarySpec;
 
 import java.util.Map;
 
@@ -67,11 +67,11 @@ public class WindowsResourceScriptPlugin implements Plugin<ProjectInternal> {
         }
 
         @Override
-        public boolean applyToBinary(ProjectBinary binary) {
-            return binary instanceof ProjectNativeBinary && shouldProcessResources((ProjectNativeBinary) binary);
+        public boolean applyToBinary(BinarySpec binary) {
+            return binary instanceof NativeBinarySpec && shouldProcessResources((NativeBinarySpec) binary);
         }
 
-        private boolean shouldProcessResources(ProjectNativeBinary binary) {
+        private boolean shouldProcessResources(NativeBinarySpec binary) {
             return binary.getTargetPlatform().getOperatingSystem().isWindows();
         }
     }

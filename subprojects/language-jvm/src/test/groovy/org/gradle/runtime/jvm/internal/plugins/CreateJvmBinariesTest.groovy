@@ -19,13 +19,13 @@ package org.gradle.runtime.jvm.internal.plugins
 import org.gradle.internal.service.ServiceRegistryBuilder
 import org.gradle.language.base.LanguageSourceSet
 import org.gradle.runtime.base.BinaryContainer
-import org.gradle.runtime.base.NamedProjectComponentIdentifier
-import org.gradle.runtime.base.ProjectBinary
+import org.gradle.runtime.base.ComponentSpecIdentifier
+import org.gradle.runtime.base.BinarySpec
 import org.gradle.runtime.base.internal.BinaryNamingScheme
 import org.gradle.runtime.base.internal.BinaryNamingSchemeBuilder
-import org.gradle.runtime.jvm.ProjectJvmLibrary
-import org.gradle.runtime.jvm.internal.DefaultProjectJarBinary
-import org.gradle.runtime.jvm.internal.DefaultProjectJvmLibrary
+import org.gradle.runtime.jvm.JvmLibrarySpec
+import org.gradle.runtime.jvm.internal.DefaultJarBinarySpec
+import org.gradle.runtime.jvm.internal.DefaultJvmLibrarySpec
 import org.gradle.runtime.jvm.plugins.JvmComponentPlugin
 import org.gradle.runtime.jvm.toolchain.JavaToolChain
 import spock.lang.Specification
@@ -45,11 +45,11 @@ class CreateJvmBinariesTest extends Specification {
     }).build()
 
     def "adds a binary for each jvm library"() {
-        def library = new DefaultProjectJvmLibrary(componentId("jvmLibOne", ":project-path"))
+        def library = new DefaultJvmLibrarySpec(componentId("jvmLibOne", ":project-path"))
         def namingScheme = Mock(BinaryNamingScheme)
 
         when:
-        rule.createBinaries(binaries, namingSchemeBuilder, toNamedDomainObjectSet(ProjectJvmLibrary, library), buildDir, serviceRegistry)
+        rule.createBinaries(binaries, namingSchemeBuilder, toNamedDomainObjectSet(JvmLibrarySpec, library), buildDir, serviceRegistry)
 
         then:
         _ * namingScheme.description >> "jvmLibJar"
@@ -57,25 +57,25 @@ class CreateJvmBinariesTest extends Specification {
         1 * namingSchemeBuilder.withComponentName("jvmLibOne") >> namingSchemeBuilder
         1 * namingSchemeBuilder.withTypeString("jar") >> namingSchemeBuilder
         1 * namingSchemeBuilder.build() >> namingScheme
-        1 * binaries.add({ DefaultProjectJarBinary binary ->
+        1 * binaries.add({ DefaultJarBinarySpec binary ->
             binary.namingScheme == namingScheme
             binary.library == library
             binary.classesDir == new File(buildDir, "jvmJarOutput")
             binary.resourcesDir == binary.classesDir
             binary.toolChain == toolChain
-        } as ProjectBinary)
+        } as BinarySpec)
         0 * _
     }
 
     def "created binary has sources from jvm library"() {
-        def library = new DefaultProjectJvmLibrary(componentId("jvmLibOne", ":project-path"))
+        def library = new DefaultJvmLibrarySpec(componentId("jvmLibOne", ":project-path"))
         def namingScheme = Mock(BinaryNamingScheme)
         def source1 = Mock(LanguageSourceSet)
         def source2 = Mock(LanguageSourceSet)
 
         when:
         library.source([source1, source2])
-        rule.createBinaries(binaries, namingSchemeBuilder, toNamedDomainObjectSet(ProjectJvmLibrary, library), buildDir, serviceRegistry)
+        rule.createBinaries(binaries, namingSchemeBuilder, toNamedDomainObjectSet(JvmLibrarySpec, library), buildDir, serviceRegistry)
 
         then:
         _ * namingScheme.description >> "jvmLibJar"
@@ -83,17 +83,17 @@ class CreateJvmBinariesTest extends Specification {
         1 * namingSchemeBuilder.withComponentName("jvmLibOne") >> namingSchemeBuilder
         1 * namingSchemeBuilder.withTypeString("jar") >> namingSchemeBuilder
         1 * namingSchemeBuilder.build() >> namingScheme
-        1 * binaries.add({ DefaultProjectJarBinary binary ->
+        1 * binaries.add({ DefaultJarBinarySpec binary ->
             binary.namingScheme == namingScheme
             binary.library == library
             binary.source == library.source
             binary.toolChain == toolChain
-        } as ProjectBinary)
+        } as BinarySpec)
         0 * _
     }
 
     def componentId(def name, def path) {
-        Stub(NamedProjectComponentIdentifier) {
+        Stub(ComponentSpecIdentifier) {
             getName() >> name
             getProjectPath() >> path
         }

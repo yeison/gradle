@@ -22,8 +22,8 @@ import org.gradle.api.internal.file.FileResolver
 import org.gradle.language.base.FunctionalSourceSet
 import org.gradle.language.base.LanguageSourceSet
 import org.gradle.logging.TestStyledTextOutput
-import org.gradle.runtime.base.ProjectBinary
-import org.gradle.runtime.base.ProjectComponent
+import org.gradle.runtime.base.BinarySpec
+import org.gradle.runtime.base.ComponentSpec
 import spock.lang.Specification
 
 class ComponentReportRendererTest extends Specification {
@@ -50,7 +50,7 @@ class ComponentReportRendererTest extends Specification {
     }
 
     def "renders project with single component"() {
-        def component = Stub(ProjectComponent) {
+        def component = Stub(ComponentSpec) {
             getDisplayName() >> "<component>"
         }
 
@@ -65,10 +65,10 @@ class ComponentReportRendererTest extends Specification {
     }
 
     def "renders project with multiple components"() {
-        def component1 = Stub(ProjectComponent) {
+        def component1 = Stub(ComponentSpec) {
             getDisplayName() >> "<component 1>"
         }
-        def component2 = Stub(ProjectComponent) {
+        def component2 = Stub(ComponentSpec) {
             getDisplayName() >> "<component 2>"
         }
 
@@ -92,7 +92,7 @@ class ComponentReportRendererTest extends Specification {
         def sourceSet2 = Stub(LanguageSourceSet) {
             getDisplayName() >> "<source set>"
         }
-        def component = Stub(ProjectComponent) {
+        def component = Stub(ComponentSpec) {
             getSource() >> set(LanguageSourceSet, sourceSet1)
         }
         def functionalSourceSet = Stub(FunctionalSourceSet) {
@@ -116,13 +116,13 @@ class ComponentReportRendererTest extends Specification {
     }
 
     def "renders additional binaries"() {
-        def binary1 = Stub(ProjectBinary)
-        def binary2 = Stub(ProjectBinary) {
+        def binary1 = Stub(BinarySpec)
+        def binary2 = Stub(BinarySpec) {
             getDisplayName() >> "<binary>"
             isBuildable() >> true
         }
-        def component = Stub(ProjectComponent) {
-            getBinaries() >> set(ProjectBinary, binary1)
+        def component = Stub(ComponentSpec) {
+            getBinaries() >> set(BinarySpec, binary1)
         }
 
         when:

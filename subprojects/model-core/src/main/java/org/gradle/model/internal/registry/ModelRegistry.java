@@ -17,15 +17,11 @@
 package org.gradle.model.internal.registry;
 
 import org.gradle.api.Nullable;
-import org.gradle.model.internal.core.ModelElement;
-import org.gradle.model.internal.core.ModelPath;
-import org.gradle.model.internal.core.ModelReference;
-import org.gradle.model.internal.core.ModelState;
-import org.gradle.model.internal.core.ModelRuleRegistrar;
+import org.gradle.model.internal.core.*;
 
 public interface ModelRegistry extends ModelRuleRegistrar {
 
-    public <T> T get(ModelReference<T> reference);
+    public <T> T get(ModelPath path, ModelType<T> type);
 
     public ModelElement element(ModelPath path);
 
@@ -33,4 +29,6 @@ public interface ModelRegistry extends ModelRuleRegistrar {
     public ModelState state(ModelPath path);
 
     void remove(ModelPath path);
+
+    void validate() throws UnboundModelRulesException;
 }

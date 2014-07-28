@@ -17,7 +17,6 @@
 package org.gradle.integtests.fixtures.executer;
 
 import org.gradle.BuildResult;
-import org.gradle.initialization.GradleLauncher;
 import org.gradle.StartParameter;
 import org.gradle.api.GradleException;
 import org.gradle.api.Task;
@@ -34,6 +33,8 @@ import org.gradle.execution.MultipleBuildFailures;
 import org.gradle.initialization.BuildLayoutParameters;
 import org.gradle.initialization.DefaultCommandLineConverter;
 import org.gradle.initialization.DefaultGradleLauncherFactory;
+import org.gradle.initialization.GradleLauncher;
+import org.gradle.initialization.FixedBuildCancellationToken;
 import org.gradle.internal.Factory;
 import org.gradle.internal.exceptions.LocationAwareException;
 import org.gradle.internal.jvm.Jvm;
@@ -175,7 +176,7 @@ class InProcessGradleExecuter extends AbstractGradleExecuter {
         DefaultGradleLauncherFactory factory = GLOBAL_SERVICES.get(DefaultGradleLauncherFactory.class);
         factory.addListener(listener);
         try {
-            GradleLauncher gradleLauncher = factory.newInstance(parameter);
+            GradleLauncher gradleLauncher = factory.newInstance(parameter, new FixedBuildCancellationToken());
             try {
                 gradleLauncher.addStandardOutputListener(outputListener);
                 gradleLauncher.addStandardErrorListener(errorListener);
@@ -187,7 +188,7 @@ class InProcessGradleExecuter extends AbstractGradleExecuter {
             // Restore the environment
             System.setProperties(originalSysProperties);
             processEnvironment.maybeSetProcessDir(originalUserDir);
-            for (String envVar: getEnvironmentVars().keySet()) {
+            for (String envVar : getEnvironmentVars().keySet()) {
                 String oldValue = originalEnv.get(envVar);
                 if (oldValue != null) {
                     processEnvironment.maybeSetEnvironmentVariable(envVar, oldValue);
@@ -393,14 +394,14 @@ class InProcessGradleExecuter extends AbstractGradleExecuter {
         }
 
         public ExecutionFailure assertHasCause(String description) {
-            assertThatCause(startsWith(description));
+            assertThatCause(normalizedLineSeparators(startsWith(description)));
             return this;
         }
 
         public ExecutionFailure assertThatCause(final Matcher<String> matcher) {
             List<Throwable> causes = new ArrayList<Throwable>();
             extractCauses(failure, causes);
-            assertThat(causes, Matchers.<Throwable>hasItem(hasMessage(normalizedLineSeparators(matcher))));
+            assertThat(causes, Matchers.<Throwable>hasItem(hasMessage(matcher)));
             outputFailure.assertThatCause(matcher);
             return this;
         }
@@ -414,7 +415,7 @@ class InProcessGradleExecuter extends AbstractGradleExecuter {
             } else if (failure instanceof LocationAwareException) {
                 causes.addAll(((LocationAwareException) failure).getReportableCauses());
             } else {
-                causes.add(failure.getCause());
+                causes.add(failure);
             }
         }
 

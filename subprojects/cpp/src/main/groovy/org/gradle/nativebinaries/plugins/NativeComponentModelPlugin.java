@@ -40,7 +40,7 @@ import org.gradle.nativebinaries.toolchain.internal.DefaultToolChainRegistry;
 import org.gradle.nativebinaries.toolchain.internal.ToolChainInternal;
 import org.gradle.nativebinaries.toolchain.internal.ToolChainRegistryInternal;
 import org.gradle.runtime.base.BinaryContainer;
-import org.gradle.runtime.base.ProjectComponentContainer;
+import org.gradle.runtime.base.ComponentSpecContainer;
 import org.gradle.runtime.base.internal.BinaryNamingSchemeBuilder;
 import org.gradle.runtime.base.internal.DefaultBinaryNamingSchemeBuilder;
 
@@ -67,17 +67,17 @@ public class NativeComponentModelPlugin implements Plugin<ProjectInternal> {
 
         project.getModelRegistry().create(new RepositoriesFactory("repositories", instantiator, fileResolver));
 
-        ProjectComponentContainer components = project.getExtensions().getByType(ProjectComponentContainer.class);
-        components.registerFactory(ProjectNativeExecutable.class, new ProjectNativeExecutableFactory(instantiator, project));
-        NamedDomainObjectContainer<ProjectNativeExecutable> nativeExecutables = components.containerWithType(ProjectNativeExecutable.class);
+        ComponentSpecContainer components = project.getExtensions().getByType(ComponentSpecContainer.class);
+        components.registerFactory(NativeExecutableSpec.class, new NativeExecutableSpecFactory(instantiator, project));
+        NamedDomainObjectContainer<NativeExecutableSpec> nativeExecutables = components.containerWithType(NativeExecutableSpec.class);
 
-        components.registerFactory(ProjectNativeLibrary.class, new ProjectNativeLibraryFactory(instantiator, project));
-        NamedDomainObjectContainer<ProjectNativeLibrary> nativeLibraries = components.containerWithType(ProjectNativeLibrary.class);
+        components.registerFactory(NativeLibrarySpec.class, new NativeLibrarySpecFactory(instantiator, project));
+        NamedDomainObjectContainer<NativeLibrarySpec> nativeLibraries = components.containerWithType(NativeLibrarySpec.class);
 
         project.getExtensions().create("nativeRuntime", DefaultNativeComponentExtension.class, nativeExecutables, nativeLibraries);
 
         // TODO:DAZ Remove these: should not pollute the global namespace
-        project.getExtensions().add("nativeComponents", components.withType(ProjectNativeComponent.class));
+        project.getExtensions().add("nativeComponents", components.withType(NativeComponentSpec.class));
         project.getExtensions().add("executables", nativeExecutables);
         project.getExtensions().add("libraries", nativeLibraries);
     }
@@ -114,8 +114,8 @@ public class NativeComponentModelPlugin implements Plugin<ProjectInternal> {
         }
 
         @Model
-        NamedDomainObjectSet<ProjectNativeComponent> nativeComponents(ProjectComponentContainer components) {
-            return components.withType(ProjectNativeComponent.class);
+        NamedDomainObjectSet<NativeComponentSpec> nativeComponents(ComponentSpecContainer components) {
+            return components.withType(NativeComponentSpec.class);
         }
 
         @Mutate
@@ -126,21 +126,21 @@ public class NativeComponentModelPlugin implements Plugin<ProjectInternal> {
         }
 
         @Mutate
-        public void createNativeBinaries(BinaryContainer binaries, NamedDomainObjectSet<ProjectNativeComponent> nativeComponents,
+        public void createNativeBinaries(BinaryContainer binaries, NamedDomainObjectSet<NativeComponentSpec> nativeComponents,
                                          LanguageRegistry languages, ToolChainRegistryInternal toolChains,
                                          PlatformContainer platforms, BuildTypeContainer buildTypes, FlavorContainer flavors,
                                          ServiceRegistry serviceRegistry, @Path("buildDir") File buildDir) {
             Instantiator instantiator = serviceRegistry.get(Instantiator.class);
             NativeDependencyResolver resolver = serviceRegistry.get(NativeDependencyResolver.class);
-            Action<ProjectNativeBinary> configureBinaryAction = new ProjectNativeBinaryInitializer(buildDir);
-            Action<ProjectNativeBinary> setToolsAction = new ToolSettingNativeBinaryInitializer(languages);
-            Action<ProjectNativeBinary> initAction = Actions.composite(configureBinaryAction, setToolsAction, new MarkBinariesBuildable());
+            Action<NativeBinarySpec> configureBinaryAction = new NativeBinarySpecInitializer(buildDir);
+            Action<NativeBinarySpec> setToolsAction = new ToolSettingNativeBinaryInitializer(languages);
+            Action<NativeBinarySpec> initAction = Actions.composite(configureBinaryAction, setToolsAction, new MarkBinariesBuildable());
             NativeBinariesFactory factory = new DefaultNativeBinariesFactory(instantiator, initAction, resolver);
             BinaryNamingSchemeBuilder namingSchemeBuilder = new DefaultBinaryNamingSchemeBuilder();
-            Action<ProjectNativeComponent> createBinariesAction =
-                    new ProjectNativeComponentInitializer(factory, namingSchemeBuilder, toolChains, platforms, buildTypes, flavors);
+            Action<NativeComponentSpec> createBinariesAction =
+                    new NativeComponentSpecInitializer(factory, namingSchemeBuilder, toolChains, platforms, buildTypes, flavors);
 
-            for (ProjectNativeComponent component : nativeComponents) {
+            for (NativeComponentSpec component : nativeComponents) {
                 createBinariesAction.execute(component);
                 binaries.addAll(component.getBinaries());
             }
@@ -214,11 +214,11 @@ public class NativeComponentModelPlugin implements Plugin<ProjectInternal> {
 
     }
 
-    private static class MarkBinariesBuildable implements Action<ProjectNativeBinary> {
-        public void execute(ProjectNativeBinary projectNativeBinary) {
-            ToolChainInternal toolChainInternal = (ToolChainInternal) projectNativeBinary.getToolChain();
-            boolean canBuild = toolChainInternal.select(projectNativeBinary.getTargetPlatform()).isAvailable();
-            ((ProjectNativeBinaryInternal) projectNativeBinary).setBuildable(canBuild);
+    private static class MarkBinariesBuildable implements Action<NativeBinarySpec> {
+        public void execute(NativeBinarySpec nativeBinarySpec) {
+            ToolChainInternal toolChainInternal = (ToolChainInternal) nativeBinarySpec.getToolChain();
+            boolean canBuild = toolChainInternal.select(nativeBinarySpec.getTargetPlatform()).isAvailable();
+            ((NativeBinarySpecInternal) nativeBinarySpec).setBuildable(canBuild);
         }
     }
 }

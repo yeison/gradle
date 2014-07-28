@@ -28,7 +28,7 @@ public interface ModelCreator {
 
     ModelAdapter create(Inputs inputs);
 
-    List<ModelBinding<?>> getInputBindings();
+    List<ModelReference<?>> getInputs();
 
     ModelRuleDescriptor getDescriptor();
 

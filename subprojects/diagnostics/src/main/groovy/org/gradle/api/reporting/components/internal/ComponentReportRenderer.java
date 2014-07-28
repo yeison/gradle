@@ -20,8 +20,8 @@ import org.gradle.api.internal.file.FileResolver;
 import org.gradle.api.tasks.diagnostics.internal.TextReportRenderer;
 import org.gradle.language.base.FunctionalSourceSet;
 import org.gradle.language.base.LanguageSourceSet;
-import org.gradle.runtime.base.ProjectBinary;
-import org.gradle.runtime.base.ProjectComponent;
+import org.gradle.runtime.base.ComponentSpec;
+import org.gradle.runtime.base.BinarySpec;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -35,7 +35,7 @@ public class ComponentReportRenderer extends TextReportRenderer {
     private final SourceSetRenderer sourceSetRenderer;
     private final BinaryRenderer binaryRenderer;
     private final Set<LanguageSourceSet> componentSourceSets = new HashSet<LanguageSourceSet>();
-    private final Set<ProjectBinary> componentBinaries = new HashSet<ProjectBinary>();
+    private final Set<BinarySpec> componentBinaries = new HashSet<BinarySpec>();
 
     public ComponentReportRenderer(FileResolver fileResolver) {
         componentRenderer = new ComponentRenderer(fileResolver);
@@ -50,13 +50,13 @@ public class ComponentReportRenderer extends TextReportRenderer {
         super.complete();
     }
 
-    public void renderComponents(Collection<ProjectComponent> components) {
+    public void renderComponents(Collection<ComponentSpec> components) {
         if (components.isEmpty()) {
             getTextOutput().withStyle(Info).println("No components defined for this project.");
             return;
         }
         boolean seen = false;
-        for (ProjectComponent component : components) {
+        for (ComponentSpec component : components) {
             if (seen) {
                 getBuilder().getOutput().println();
             } else {
@@ -86,9 +86,9 @@ public class ComponentReportRenderer extends TextReportRenderer {
         }
     }
 
-    public void renderBinaries(Collection<ProjectBinary> binaries) {
-        Set<ProjectBinary> additionalBinaries = new LinkedHashSet<ProjectBinary>();
-        for (ProjectBinary binary : binaries) {
+    public void renderBinaries(Collection<BinarySpec> binaries) {
+        Set<BinarySpec> additionalBinaries = new LinkedHashSet<BinarySpec>();
+        for (BinarySpec binary : binaries) {
             if (!componentBinaries.contains(binary)) {
                 additionalBinaries.add(binary);
             }
@@ -96,7 +96,7 @@ public class ComponentReportRenderer extends TextReportRenderer {
         if (!additionalBinaries.isEmpty()) {
             getBuilder().getOutput().println();
             getBuilder().subheading("Additional binaries");
-            for (ProjectBinary binary : additionalBinaries) {
+            for (BinarySpec binary : additionalBinaries) {
                 binaryRenderer.render(binary, getBuilder());
             }
         }

@@ -16,14 +16,14 @@
 
 package org.gradle.runtime.jvm.internal
 
-import org.gradle.runtime.base.NamedProjectComponentIdentifier
+import org.gradle.runtime.base.ComponentSpecIdentifier
 import spock.lang.Specification
 
 class DefaultProjectJvmLibraryTest extends Specification {
-    def libraryId = Mock(NamedProjectComponentIdentifier)
+    def libraryId = Mock(ComponentSpecIdentifier)
 
     def "library has name and path"() {
-        def library = new DefaultProjectJvmLibrary(libraryId)
+        def library = new DefaultJvmLibrarySpec(libraryId)
 
         when:
         _ * libraryId.name >> "jvm-lib"

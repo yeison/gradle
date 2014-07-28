@@ -29,6 +29,7 @@ import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.TaskDependency;
 import org.gradle.api.tasks.TaskState;
 import org.gradle.execution.TaskFailureHandler;
+import org.gradle.initialization.BuildCancellationToken;
 import org.gradle.listener.ListenerBroadcast;
 import org.gradle.listener.ListenerManager;
 import org.gradle.util.JUnit4GroovyMockery;
@@ -56,6 +57,7 @@ import static org.junit.Assert.*;
 public class DefaultTaskGraphExecuterTest {
     final JUnit4Mockery context = new JUnit4GroovyMockery();
     final ListenerManager listenerManager = context.mock(ListenerManager.class);
+    final BuildCancellationToken cancellationToken = context.mock(BuildCancellationToken.class);
     DefaultTaskGraphExecuter taskExecuter;
     ProjectInternal root;
     List<Task> executedTasks = new ArrayList<Task>();
@@ -359,6 +361,30 @@ public class DefaultTaskGraphExecuterTest {
             fail();
         } catch (RuntimeException e) {
             assertThat(e, sameInstance(wrappedFailure));
+        }
+
+        assertThat(executedTasks, equalTo(toList(a)));
+    }
+
+    @Test
+    public void testStopsExecutionWhenCancelled() {
+        final Task a = task("a");
+        final Task b = task("b");
+
+        taskExecuter.useCancellationHandler(cancellationToken);
+        taskExecuter.addTasks(toList(a, b));
+
+        context.checking(new Expectations(){{
+            one(cancellationToken).isCancellationRequested();
+            will(returnValue(Boolean.FALSE));
+            one(cancellationToken).isCancellationRequested();
+            will(returnValue(Boolean.TRUE));
+        }});
+        try {
+            taskExecuter.execute();
+            fail();
+        } catch (RuntimeException e) {
+            assertEquals("Build cancelled.", e.getMessage());
         }
 
         assertThat(executedTasks, equalTo(toList(a)));

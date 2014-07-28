@@ -16,10 +16,12 @@
 package org.gradle.execution
 
 import org.gradle.api.internal.GradleInternal
+import org.gradle.initialization.BuildCancellationToken
 import spock.lang.Specification
 
 class DefaultBuildExecuterTest extends Specification {
     final GradleInternal gradleInternal = Mock()
+    final BuildCancellationToken cancellationToken = Mock()
 
     def "select method calls configure method on first configuration action"() {
         BuildConfigurationAction action1 = Mock()
@@ -29,7 +31,7 @@ class DefaultBuildExecuterTest extends Specification {
         def buildExecution = new DefaultBuildExecuter([action1, action2], [])
 
         when:
-        buildExecution.select(gradleInternal)
+        buildExecution.select(gradleInternal, cancellationToken)
 
         then:
         1 * action1.configure(!null)
@@ -44,7 +46,7 @@ class DefaultBuildExecuterTest extends Specification {
         def buildExecution = new DefaultBuildExecuter([action1, action2], [])
 
         when:
-        buildExecution.select(gradleInternal)
+        buildExecution.select(gradleInternal, cancellationToken)
 
         then:
         1 * action1.configure(!null) >> { it[0].proceed() }
@@ -60,7 +62,7 @@ class DefaultBuildExecuterTest extends Specification {
         def buildExecution = new DefaultBuildExecuter([action1], [])
 
         when:
-        buildExecution.select(gradleInternal)
+        buildExecution.select(gradleInternal, cancellationToken)
 
         then:
         1 * action1.configure(!null) >> { it[0].proceed() }
@@ -73,7 +75,7 @@ class DefaultBuildExecuterTest extends Specification {
 
         given:
         def buildExecution = new DefaultBuildExecuter([], [action1, action2])
-        buildExecution.select(gradleInternal)
+        buildExecution.select(gradleInternal, cancellationToken)
 
         when:
         buildExecution.execute()
@@ -89,7 +91,7 @@ class DefaultBuildExecuterTest extends Specification {
 
         given:
         def buildExecution = new DefaultBuildExecuter([], [action1, action2])
-        buildExecution.select(gradleInternal)
+        buildExecution.select(gradleInternal, cancellationToken)
 
         when:
         buildExecution.execute()
@@ -106,7 +108,7 @@ class DefaultBuildExecuterTest extends Specification {
 
         given:
         def buildExecution = new DefaultBuildExecuter([], [action1])
-        buildExecution.select(gradleInternal)
+        buildExecution.select(gradleInternal, cancellationToken)
 
         when:
         buildExecution.execute()
@@ -124,7 +126,7 @@ class DefaultBuildExecuterTest extends Specification {
         def buildExecution = new DefaultBuildExecuter([configurationAction], [executionAction])
 
         when:
-        buildExecution.select(gradleInternal)
+        buildExecution.select(gradleInternal, cancellationToken)
         buildExecution.execute()
 
         then:
@@ -133,6 +135,26 @@ class DefaultBuildExecuterTest extends Specification {
         }
         1 * executionAction.execute(!null) >> {
             assert it[0].gradle ==gradleInternal
+        }
+    }
+
+    def "makes cancellation token available to actions"() {
+        BuildConfigurationAction configurationAction = Mock()
+        BuildExecutionAction executionAction = Mock()
+
+        given:
+        def buildExecution = new DefaultBuildExecuter([configurationAction], [executionAction])
+
+        when:
+        buildExecution.select(gradleInternal, cancellationToken)
+        buildExecution.execute()
+
+        then:
+        1 * configurationAction.configure(!null) >> {
+            assert it[0].cancellationToken == cancellationToken
+        }
+        1 * executionAction.execute(!null) >> {
+            assert it[0].cancellationToken == cancellationToken
         }
     }
 }

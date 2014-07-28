@@ -18,11 +18,11 @@ package org.gradle.nativebinaries.internal.resolve;
 import org.gradle.api.DomainObjectSet;
 import org.gradle.api.Project;
 import org.gradle.api.internal.DefaultDomainObjectSet;
-import org.gradle.nativebinaries.ProjectNativeLibrary;
+import org.gradle.nativebinaries.NativeLibrarySpec;
 import org.gradle.nativebinaries.NativeLibraryBinary;
 import org.gradle.nativebinaries.NativeLibraryRequirement;
-import org.gradle.nativebinaries.ProjectNativeBinary;
-import org.gradle.runtime.base.ProjectComponentContainer;
+import org.gradle.nativebinaries.NativeBinarySpec;
+import org.gradle.runtime.base.ComponentSpecContainer;
 
 public class ProjectLibraryBinaryLocator implements LibraryBinaryLocator {
     private final ProjectLocator projectLocator;
@@ -34,15 +34,15 @@ public class ProjectLibraryBinaryLocator implements LibraryBinaryLocator {
     // Converts the binaries of a project library into regular binary instances
     public DomainObjectSet<NativeLibraryBinary> getBinaries(NativeLibraryRequirement requirement) {
         Project project = findProject(requirement);
-        ProjectComponentContainer projectComponentContainer = project.getExtensions().findByType(ProjectComponentContainer.class);
-        if (projectComponentContainer == null) {
+        ComponentSpecContainer componentSpecContainer = project.getExtensions().findByType(ComponentSpecContainer.class);
+        if (componentSpecContainer == null) {
             throw new LibraryResolveException(String.format("Project does not have a libraries container: '%s'", project.getPath()));
         }
-        DomainObjectSet<ProjectNativeBinary> projectBinaries = projectComponentContainer.withType(ProjectNativeLibrary.class).getByName(requirement.getLibraryName()).getBinaries();
+        DomainObjectSet<NativeBinarySpec> projectBinaries = componentSpecContainer.withType(NativeLibrarySpec.class).getByName(requirement.getLibraryName()).getBinaries();
         DomainObjectSet<NativeLibraryBinary> binaries = new DefaultDomainObjectSet<NativeLibraryBinary>(NativeLibraryBinary.class);
         // TODO:DAZ Convert, don't cast
-        for (ProjectNativeBinary projectNativeBinary : projectBinaries) {
-            binaries.add((NativeLibraryBinary) projectNativeBinary);
+        for (NativeBinarySpec nativeBinarySpec : projectBinaries) {
+            binaries.add((NativeLibraryBinary) nativeBinarySpec);
         }
         return binaries;
     }

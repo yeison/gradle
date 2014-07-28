@@ -16,12 +16,14 @@
 
 package org.gradle.tooling.internal.impl;
 
-import org.gradle.TaskParameter;
+import org.gradle.TaskExecutionRequest;
 import org.gradle.tooling.internal.protocol.InternalLaunchable;
 
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.List;
 
-public class LaunchableGradleTask implements Serializable, InternalLaunchable, TaskParameter {
+public class LaunchableGradleTask implements Serializable, InternalLaunchable, TaskExecutionRequest {
 
     private String path;
     private String name;
@@ -65,8 +67,8 @@ public class LaunchableGradleTask implements Serializable, InternalLaunchable, T
         return this;
     }
 
-    public String getTaskName() {
-        return path;
+    public List<String> getArgs() {
+        return Collections.singletonList(path);
     }
 
     public String getProjectPath() {
