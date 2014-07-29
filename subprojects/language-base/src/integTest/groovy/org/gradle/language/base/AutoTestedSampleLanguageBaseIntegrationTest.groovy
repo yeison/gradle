@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.gradle.api.plugins
-import org.gradle.api.Project
-import org.gradle.util.TestUtil
-import spock.lang.Specification
 
-class JavaLanguagePluginTest extends Specification {
-    Project project = TestUtil.createRootProject()
+package org.gradle.language.base
 
-    def setup() {
-        project.plugins.apply(JavaLanguagePlugin)
-    }
+import org.gradle.integtests.fixtures.AbstractAutoTestedSamplesTest
+import org.junit.Test
 
-    def "applies jvm-lang plugin"() {
-        expect:
-        project.plugins.hasPlugin(JvmLanguagePlugin)
+class AutoTestedSampleLanguageBaseIntegrationTest extends AbstractAutoTestedSamplesTest {
+    @Test
+    void runSamples() {
+        runSamplesFrom("subprojects/language-base/src/main")
     }
 }

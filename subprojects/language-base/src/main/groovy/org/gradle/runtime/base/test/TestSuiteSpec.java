@@ -14,16 +14,18 @@
  * limitations under the License.
  */
 
-package org.gradle.util.jdk7;
+package org.gradle.runtime.base.test;
 
-import org.gradle.util.FileIdentityChecker;
+import org.gradle.api.Incubating;
+import org.gradle.runtime.base.ComponentSpec;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-
-public class Jdk7FileIdentityChecker implements FileIdentityChecker {
-    public boolean isSameFile(File file1, File file2) throws IOException {
-        return Files.isSameFile(file1.toPath(), file2.toPath());
-    }
+/**
+ * A component representing a suite of tests that will be executed together.
+ */
+@Incubating
+public interface TestSuiteSpec extends ComponentSpec {
+    /**
+     * The tested component.
+     */
+    ComponentSpec getTestedComponent();
 }

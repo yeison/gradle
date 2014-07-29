@@ -13,14 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.gradle.nativebinaries.test.cunit;
 
-import org.gradle.api.Incubating;
-import org.gradle.nativebinaries.test.NativeTestSuiteSpec;
+package org.gradle.internal.nativeplatform.filesystem;
 
-/**
- * Test suite of CUnit tests.
- */
-@Incubating
-public interface CUnitTestSuite extends NativeTestSuiteSpec {
+import java.io.File;
+
+public interface FileCanonicalizer {
+    File canonicalize(File file) throws FileException;
 }

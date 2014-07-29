@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.gradle.api.plugins
-import org.gradle.api.Project
-import org.gradle.util.TestUtil
-import spock.lang.Specification
 
-class JavaLanguagePluginTest extends Specification {
-    Project project = TestUtil.createRootProject()
+package org.gradle.internal.nativeplatform.filesystem;
 
-    def setup() {
-        project.plugins.apply(JavaLanguagePlugin)
-    }
+import java.io.File;
+import java.io.IOException;
 
-    def "applies jvm-lang plugin"() {
-        expect:
-        project.plugins.hasPlugin(JvmLanguagePlugin)
+class FallbackFileCanonicalizer implements FileCanonicalizer {
+    public File canonicalize(File file) throws FileException {
+        try {
+            return file.getCanonicalFile();
+        } catch (IOException e) {
+            throw new FileException(String.format("Could not canonicalize file %s.", file), e);
+        }
     }
 }

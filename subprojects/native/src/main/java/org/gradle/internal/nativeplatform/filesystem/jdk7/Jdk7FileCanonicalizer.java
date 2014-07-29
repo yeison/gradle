@@ -14,19 +14,20 @@
  * limitations under the License.
  */
 
-package org.gradle.runtime.jvm;
+package org.gradle.internal.nativeplatform.filesystem.jdk7;
 
-import org.gradle.api.DomainObjectSet;
-import org.gradle.api.Incubating;
-import org.gradle.runtime.base.LibrarySpec;
+import org.gradle.internal.nativeplatform.filesystem.FileCanonicalizer;
+import org.gradle.internal.nativeplatform.filesystem.FileException;
 
-/**
- * Definition of a JVM library component that is to be built by Gradle.
- */
-@Incubating
-public interface JvmLibrarySpec extends LibrarySpec {
-    /**
-     * {@inheritDoc}
-     */
-    DomainObjectSet<JvmLibraryBinarySpec> getBinaries();
+import java.io.File;
+import java.io.IOException;
+
+public class Jdk7FileCanonicalizer implements FileCanonicalizer {
+    public File canonicalize(File file) throws FileException {
+        try {
+            return file.toPath().toRealPath().toFile();
+        } catch (IOException e) {
+            throw new FileException(String.format("Could not canonicalize file %s.", file), e);
+        }
+    }
 }

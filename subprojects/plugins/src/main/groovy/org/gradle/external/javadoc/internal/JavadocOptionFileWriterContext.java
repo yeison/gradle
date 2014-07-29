@@ -16,18 +16,20 @@
 
 package org.gradle.external.javadoc.internal;
 
-import java.io.BufferedWriter;
+import org.gradle.internal.SystemProperties;
+
 import java.io.File;
 import java.io.IOException;
+import java.io.Writer;
 import java.util.Collection;
 import java.util.Iterator;
 
 import static org.gradle.internal.SystemProperties.getLineSeparator;
 
 public class JavadocOptionFileWriterContext {
-    private final BufferedWriter writer;
+    private final Writer writer;
 
-    public JavadocOptionFileWriterContext(BufferedWriter writer) {
+    public JavadocOptionFileWriterContext(Writer writer) {
         this.writer = writer;
     }
 
@@ -37,7 +39,7 @@ public class JavadocOptionFileWriterContext {
     }
 
     public JavadocOptionFileWriterContext newLine() throws IOException {
-        writer.newLine();
+        writer.write(SystemProperties.getLineSeparator());
         return this;
     }
 
@@ -65,7 +67,9 @@ public class JavadocOptionFileWriterContext {
         write("\'");
         //First, we replace slashes because they have special meaning in the javadoc options file
         //Then, we replace every linebreak with slash+linebreak. Slash is needed according to javadoc options file format
-        write(value.replaceAll("\\\\", "\\\\\\\\").replaceAll(getLineSeparator(), "\\\\" + getLineSeparator()));
+        write(value.replaceAll("\\\\", "\\\\\\\\")
+                //on windows sometimes (our test infra?) I receive single \n instead of \r\n. Hence replacing either \n or the official line separator.
+                .replaceAll("(" + getLineSeparator() + ")|\n", "\\\\" + getLineSeparator()));
         write("\'");
         return this;
     }

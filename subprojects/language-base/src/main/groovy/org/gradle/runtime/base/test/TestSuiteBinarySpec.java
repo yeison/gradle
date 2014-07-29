@@ -14,11 +14,15 @@
  * limitations under the License.
  */
 
-package org.gradle.util;
+package org.gradle.runtime.base.test;
 
-import java.io.File;
-import java.io.IOException;
+import org.gradle.api.Incubating;
+import org.gradle.runtime.base.BinarySpec;
 
-public interface FileIdentityChecker {
-    boolean isSameFile(File file1, File file2) throws IOException;
+/**
+ * A binary which runs a suite of tests.
+ */
+@Incubating
+public interface TestSuiteBinarySpec extends BinarySpec {
+
 }
