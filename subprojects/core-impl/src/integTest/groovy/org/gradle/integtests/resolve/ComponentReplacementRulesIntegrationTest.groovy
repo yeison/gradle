@@ -20,17 +20,12 @@
 package org.gradle.integtests.resolve
 
 import org.gradle.integtests.fixtures.AbstractIntegrationSpec
+import org.gradle.integtests.fixtures.TestDependency
 
 class ComponentReplacementRulesIntegrationTest extends AbstractIntegrationSpec {
 
     /*
     Cases:
-
-    transitive:
-    a->b, only c->b in graph
-    a->b, only c->a in graph
-    a->b, c->a and d->b in graph
-
     conflict + transitive:
     a1,a2,x,b1,b2
     a1,b1,a2,x,b2
@@ -53,73 +48,77 @@ class ComponentReplacementRulesIntegrationTest extends AbstractIntegrationSpec {
             task resolvedFiles(type: Copy) {
                 from configurations.conf
                 into 'resolved-files'
+                doLast {
+                    println "All files:"
+                    configurations.conf.each { println it.name }
+                }
             }
+        """
+    }
+
+    void declaredDependencies(String ... deps) {
+        def content = ''
+        deps.each {
+            content += "dependencies.conf '${new TestDependency(it).notation}'\n"
+        }
+        buildFile << """
+            $content
+        """
+    }
+
+    void declaredReplacements(String ... reps) {
+        def content = ''
+        reps.each {
+            def d = new TestDependency(it)
+            content += "dependencies.components.replacements.from('${d.notation}').into('$d.pointsTo.notation')\n"
+        }
+        buildFile << """
+            $content
         """
     }
 
     void resolvedFiles(String ... files) {
         run("resolvedFiles")
-        file('resolved-files').listFiles() as Set == files as Set
+        assert file('resolved-files').listFiles()*.name as Set == files as Set
+    }
+
+    void resolvedModules(String ... modules) {
+        resolvedFiles(modules.collect { new TestDependency(it).jarName } as String[])
     }
 
     def "ignores replacement if not in graph"() {
-        mavenModules('org:a:1', 'org:b:1')
-
-        buildFile << """
-            dependencies { conf 'org:a:1' }
-            dependencies.components.replacements.from('org:a:1').into('org:b:1')
-        """
-
-        expect:
-        resolvedFiles("a-1.jar")
+        publishedMavenModules 'a', 'b'
+        declaredDependencies 'a'
+        declaredReplacements 'a->b'
+        expect: resolvedModules 'a'
     }
 
     def "ignores replacement if org does not match"() {
-        mavenModules('org:a:1', 'org:b:1', 'com:b:1')
-
-        buildFile << """
-            dependencies { conf 'org:a:1', 'com:b:1' }
-            dependencies.components.replacements.from('org:a:1').into('org:b:1')
-        """
-
-        expect:
-        resolvedFiles("a-1.jar", "b-1.jar")
-    }
-
-    def "ignores replacement if version does not match"() {
-        mavenModules('org:a:1', 'org:b:1', 'org:b:2')
-
-        buildFile << """
-            dependencies { conf 'org:a:1', 'org:b:2' }
-            dependencies.components.replacements.from('org:a:1').into('org:b:1')
-        """
-
-        expect:
-        resolvedFiles("a-1.jar", "b-2.jar")
+        publishedMavenModules 'a', 'org:b', 'com:b'
+        declaredDependencies 'a', 'com:b'
+        declaredReplacements 'a->org:b'
+        expect: resolvedModules 'a', 'com:b'
     }
 
     def "just uses replacement if source not in graph"() {
-        mavenModules('org:a:1', 'org:b:1')
-
-        buildFile << """
-            dependencies { conf 'org:b:1' }
-            dependencies.components.replacements.from('org:a:1').into('org:b:1')
-        """
-
-        expect:
-        resolvedFiles("b-1.jar")
+        publishedMavenModules 'a', 'b'
+        declaredDependencies 'b'
+        declaredReplacements 'a->b'
+        expect: resolvedModules 'b'
     }
 
     def "replaces single module"() {
-        mavenModules('org:a:1', 'org:b:1')
+        publishedMavenModules 'a', 'b'
+        declaredDependencies 'a', 'b'
+        declaredReplacements 'a->b'
+        expect: resolvedModules 'b'
+    }
 
-        buildFile << """
-            dependencies { conf 'org:b:1', 'org:a:1' }
-            dependencies.components.replacements.from('org:a:1').into('org:b:1')
-        """
-
-        expect:
-        resolvedFiles("a-1.jar")
+    def "replaces transitive module"() {
+        publishedMavenModules 'a->b', 'd->c'
+        declaredDependencies 'a', 'd'
+        declaredReplacements 'b->c'
+        expect: resolvedModules 'a', 'd', 'c'
     }
 
     def "selects highest guava over google collections"() {
