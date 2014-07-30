@@ -416,7 +416,6 @@ public class DependencyGraphBuilder {
         final Set<DependencyEdge> unattachedDependencies = new LinkedHashSet<DependencyEdge>();
         final Map<ModuleVersionIdentifier, ModuleVersionResolveState> versions = new LinkedHashMap<ModuleVersionIdentifier, ModuleVersionResolveState>();
         final ResolveState resolveState;
-        ModuleVersionResolveState selected;
 
         private ModuleResolveState(ModuleIdentifier id, ResolveState resolveState) {
             this.id = id;
@@ -433,18 +432,20 @@ public class DependencyGraphBuilder {
         }
 
         public void select(ModuleVersionResolveState selected) {
-            assert this.selected == null;
-            this.selected = selected;
-            for (ModuleVersionResolveState version : versions.values()) {
+            Collection<ModuleVersionResolveState> values = versions.values();
+            assert values.contains(selected);
+            for (ModuleVersionResolveState version : values) {
                 version.state = ModuleState.Evicted;
             }
             selected.state = ModuleState.Selected;
         }
 
         public ModuleVersionResolveState clearSelection() {
-            ModuleVersionResolveState previousSelection = selected;
-            selected = null;
+            ModuleVersionResolveState previousSelection = null;
             for (ModuleVersionResolveState version : versions.values()) {
+                if (version.state == ModuleState.Selected) {
+                    previousSelection = version;
+                }
                 version.state = ModuleState.Conflict;
             }
             return previousSelection;
@@ -807,7 +808,7 @@ public class DependencyGraphBuilder {
         }
 
         public ModuleVersionResolveState getSelected() {
-            return targetModule.selected;
+            return targetModuleRevision;
         }
 
         public ModuleResolveState getSelectedModule() {
