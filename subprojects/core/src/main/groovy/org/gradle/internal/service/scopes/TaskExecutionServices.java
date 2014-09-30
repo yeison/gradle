@@ -53,9 +53,11 @@ public class TaskExecutionServices {
 
     TaskArtifactStateCacheAccess createCacheAccess(Gradle gradle, CacheRepository cacheRepository, InMemoryTaskArtifactCache inMemoryTaskArtifactCache, GradleBuildEnvironment environment) {
         CacheDecorator decorator;
-        if (environment.isLongLivingProcess()) {
+        if (environment.isLongLivingProcess() && System.getProperty("no-mem-artifacts") == null) {
+            System.out.println(" *** Using in-memory task artifact cache");
             decorator = inMemoryTaskArtifactCache;
         } else {
+            System.out.println(" *** Using standard task artifact cache");
             decorator = new NoOpDecorator();
         }
         return new DefaultTaskArtifactStateCacheAccess(gradle, cacheRepository, decorator);

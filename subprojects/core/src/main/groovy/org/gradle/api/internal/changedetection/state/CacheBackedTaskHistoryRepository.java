@@ -167,7 +167,13 @@ public class CacheBackedTaskHistoryRepository implements TaskHistoryRepository {
     }
 
     private static class TaskHistory {
-        private static final int MAX_HISTORY_ENTRIES = 3;
+        private static final int MAX_HISTORY_ENTRIES;
+
+        static {
+            MAX_HISTORY_ENTRIES = System.getProperty("no-task-history") != null? 1 : 3;
+            System.out.println(" *** Task history size: " + MAX_HISTORY_ENTRIES);
+        }
+
         private final List<LazyTaskExecution> configurations = new ArrayList<LazyTaskExecution>();
         public String toString() {
             return super.toString() + "[" + configurations.size() + "]";
