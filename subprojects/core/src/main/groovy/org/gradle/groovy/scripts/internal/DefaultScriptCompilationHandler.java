@@ -43,12 +43,15 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.net.URLClassLoader;
 import java.security.CodeSource;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class DefaultScriptCompilationHandler implements ScriptCompilationHandler {
     private Logger logger = LoggerFactory.getLogger(DefaultScriptCompilationHandler.class);
     private static final String EMPTY_SCRIPT_MARKER_FILE_NAME = "emptyScript.txt";
     private final EmptyScriptGenerator emptyScriptGenerator;
+    private static Map<File, URLClassLoader> loaders = new HashMap<File, URLClassLoader>();
 
     public DefaultScriptCompilationHandler(EmptyScriptGenerator emptyScriptGenerator) {
         this.emptyScriptGenerator = emptyScriptGenerator;
@@ -150,8 +153,12 @@ public class DefaultScriptCompilationHandler implements ScriptCompilationHandler
         }
 
         try {
-            URLClassLoader urlClassLoader = new URLClassLoader(WrapUtil.toArray(scriptCacheDir.toURI().toURL()), classLoader);
-            return urlClassLoader.loadClass(source.getClassName()).asSubclass(scriptBaseClass);
+            URLClassLoader loader = loaders.get(scriptCacheDir);
+            if (loader == null) {
+                loader = new URLClassLoader(WrapUtil.toArray(scriptCacheDir.toURI().toURL()), classLoader);
+                loaders.put(scriptCacheDir, loader);
+            }
+            return loader.loadClass(source.getClassName()).asSubclass(scriptBaseClass);
         } catch (Exception e) {
             File expectedClassFile = new File(scriptCacheDir, source.getClassName() + ".class");
             if (!expectedClassFile.exists()) {

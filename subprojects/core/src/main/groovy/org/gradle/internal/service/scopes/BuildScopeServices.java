@@ -82,6 +82,9 @@ import org.gradle.util.GradleVersion;
  * Contains the singleton services for a single build invocation.
  */
 public class BuildScopeServices extends DefaultServiceRegistry {
+
+    private static DefaultClassLoaderScopeRegistry defaultClassLoaderScopeRegistry;
+
     public BuildScopeServices(final ServiceRegistry parent, final StartParameter startParameter) {
         super(parent);
         register(new Action<ServiceRegistration>() {
@@ -290,7 +293,11 @@ public class BuildScopeServices extends DefaultServiceRegistry {
     }
 
     protected ClassLoaderScopeRegistry createClassLoaderScopeRegistry(ClassLoaderRegistry classLoaderRegistry) {
-        return new DefaultClassLoaderScopeRegistry(classLoaderRegistry);
+//        return new DefaultClassLoaderScopeRegistry(classLoaderRegistry);
+        if (defaultClassLoaderScopeRegistry == null) {
+            defaultClassLoaderScopeRegistry = new DefaultClassLoaderScopeRegistry(classLoaderRegistry);
+        }
+        return defaultClassLoaderScopeRegistry;
     }
 
     protected ProjectTaskLister createProjectTaskLister() {

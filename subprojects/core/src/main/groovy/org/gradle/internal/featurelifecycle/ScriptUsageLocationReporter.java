@@ -18,9 +18,14 @@ package org.gradle.internal.featurelifecycle;
 
 import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.lang.StringUtils;
+import org.gradle.BuildListener;
+import org.gradle.BuildResult;
+import org.gradle.api.initialization.Settings;
+import org.gradle.api.invocation.Gradle;
 import org.gradle.groovy.scripts.Script;
 import org.gradle.groovy.scripts.ScriptExecutionListener;
 import org.gradle.groovy.scripts.ScriptSource;
+import org.gradle.util.DeprecationLogger;
 
 import java.util.HashMap;
 import java.util.List;
@@ -29,7 +34,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 @ThreadSafe
-public class ScriptUsageLocationReporter implements ScriptExecutionListener, UsageLocationReporter {
+public class ScriptUsageLocationReporter implements ScriptExecutionListener, UsageLocationReporter, BuildListener {
     private final Lock lock = new ReentrantLock();
     private final Map<String, ScriptSource> scripts = new HashMap<String, ScriptSource>();
 
@@ -87,5 +92,25 @@ public class ScriptUsageLocationReporter implements ScriptExecutionListener, Usa
             target.append(": line ");
             target.append(stackTraceElement.getLineNumber());
         }
+    }
+
+    public void buildStarted(Gradle gradle) {
+
+    }
+
+    public void settingsEvaluated(Settings settings) {
+
+    }
+
+    public void projectsLoaded(Gradle gradle) {
+
+    }
+
+    public void projectsEvaluated(Gradle gradle) {
+
+    }
+
+    public void buildFinished(BuildResult result) {
+        scripts.clear();
     }
 }

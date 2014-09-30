@@ -58,6 +58,7 @@ import java.util.List;
 public class GlobalScopeServices {
 
     private GradleBuildEnvironment environment;
+    private static DefaultClassLoaderRegistry defaultClassLoaderRegistry;
 
     public GlobalScopeServices(final boolean longLiving) {
         this.environment = new GradleBuildEnvironment() {
@@ -115,7 +116,10 @@ public class GlobalScopeServices {
     }
 
     DefaultClassLoaderRegistry createClassLoaderRegistry(ClassPathRegistry classPathRegistry, ClassLoaderFactory classLoaderFactory) {
-        return new DefaultClassLoaderRegistry(classPathRegistry, classLoaderFactory);
+        if (defaultClassLoaderRegistry == null) {
+            defaultClassLoaderRegistry = new DefaultClassLoaderRegistry(classPathRegistry, classLoaderFactory);
+        }
+        return defaultClassLoaderRegistry;
     }
 
     ListenerManager createListenerManager() {

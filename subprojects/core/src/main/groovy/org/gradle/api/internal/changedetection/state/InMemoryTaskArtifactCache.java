@@ -16,8 +16,6 @@
 
 package org.gradle.api.internal.changedetection.state;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.cache.internal.CacheDecorator;
@@ -49,14 +47,14 @@ public class InMemoryTaskArtifactCache implements CacheDecorator {
     }
 
     private final Object lock = new Object();
-    private final Cache<String, Cache<Object, Object>> cache = CacheBuilder.newBuilder()
-            .maximumSize(CACHE_CAPS.size() * 2) //X2 to factor in a child build (for example buildSrc)
-            .build();
+
+    private final Map<String, Map<Object, Object>> cache = new HashMap<String, Map<Object, Object>>();
 
     private final Map<String, FileLock.State> states = new HashMap<String, FileLock.State>();
 
     public <K, V> MultiProcessSafePersistentIndexedCache<K, V> decorate(final String cacheId, String cacheName, final MultiProcessSafePersistentIndexedCache<K, V> original) {
-        final Cache<Object, Object> data = loadData(cacheId, cacheName);
+
+        final Map<Object, Object> data = loadData(cacheId, cacheName);
 
         return new MultiProcessSafePersistentIndexedCache<K, V>() {
             public void close() {
@@ -65,7 +63,7 @@ public class InMemoryTaskArtifactCache implements CacheDecorator {
 
             public V get(K key) {
                 assert key instanceof String || key instanceof Long || key instanceof File : "Unsupported key type: " + key;
-                Object value = data.getIfPresent(key);
+                Object value = data.get(key);
                 if (value == NULL) {
                     return null;
                 }
@@ -96,7 +94,7 @@ public class InMemoryTaskArtifactCache implements CacheDecorator {
 
                 if (outOfDate) {
                     LOG.info("Invalidating in-memory cache of {}", cacheId);
-                    data.invalidateAll();
+                    data.clear();
                 }
             }
 
@@ -108,16 +106,16 @@ public class InMemoryTaskArtifactCache implements CacheDecorator {
         };
     }
 
-    private Cache<Object, Object> loadData(String cacheId, String cacheName) {
-        Cache<Object, Object> theData;
+    private Map<Object, Object> loadData(String cacheId, String cacheName) {
+        Map<Object, Object> theData;
         synchronized (lock) {
-            theData = this.cache.getIfPresent(cacheId);
+            theData = this.cache.get(cacheId);
             if (theData != null) {
-                LOG.info("In-memory cache of {}: Size{{}}, {}", cacheId, theData.size() , theData.stats());
+                LOG.info("In-memory cache of {}: Size{{}}", cacheId, theData.size());
             } else {
                 Integer maxSize = CACHE_CAPS.get(cacheName);
                 assert maxSize != null : "Unknown cache.";
-                theData = CacheBuilder.newBuilder().maximumSize(maxSize).build();
+                theData = new HashMap<Object, Object>();
                 this.cache.put(cacheId, theData);
             }
         }
