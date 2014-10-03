@@ -83,8 +83,6 @@ import org.gradle.util.GradleVersion;
  */
 public class BuildScopeServices extends DefaultServiceRegistry {
 
-    private static DefaultClassLoaderScopeRegistry defaultClassLoaderScopeRegistry;
-
     public BuildScopeServices(final ServiceRegistry parent, final StartParameter startParameter) {
         super(parent);
         register(new Action<ServiceRegistration>() {
@@ -293,11 +291,7 @@ public class BuildScopeServices extends DefaultServiceRegistry {
     }
 
     protected ClassLoaderScopeRegistry createClassLoaderScopeRegistry(ClassLoaderRegistry classLoaderRegistry) {
-//        return new DefaultClassLoaderScopeRegistry(classLoaderRegistry);
-        if (defaultClassLoaderScopeRegistry == null) {
-            defaultClassLoaderScopeRegistry = new DefaultClassLoaderScopeRegistry(classLoaderRegistry);
-        }
-        return defaultClassLoaderScopeRegistry;
+        return new DefaultClassLoaderScopeRegistry(classLoaderRegistry);
     }
 
     protected ProjectTaskLister createProjectTaskLister() {
