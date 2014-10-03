@@ -25,9 +25,15 @@ public class DefaultClassLoaderScopeRegistry implements ClassLoaderScopeRegistry
 
     private final ClassLoaderScope coreAndPluginsScope;
     private final ClassLoaderScope coreScope;
+    private static ClassLoaderCache cache;
+
+    static {
+        if (cache == null) {
+            cache = new DefaultClassLoaderCache();
+        }
+    }
 
     public DefaultClassLoaderScopeRegistry(ClassLoaderRegistry loaderRegistry) {
-        ClassLoaderCache cache = new DefaultClassLoaderCache();
         this.coreScope = new RootClassLoaderScope(loaderRegistry.getGradleCoreApiClassLoader(), cache);
         this.coreAndPluginsScope = new RootClassLoaderScope(loaderRegistry.getGradleApiClassLoader(), cache);
     }
