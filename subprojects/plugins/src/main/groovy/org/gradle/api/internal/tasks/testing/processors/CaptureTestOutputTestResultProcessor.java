@@ -59,6 +59,9 @@ public class CaptureTestOutputTestResultProcessor implements TestResultProcessor
                 suiteId = null;
             }
         } else {
+            if (suiteId == null) {
+                throw new RuntimeException("Possible bug in test infrastructure. Received completed test event after completed suite event.");
+            }
             //when test is completed, should redirect output for the 'suite' to log things like @AfterSuite, etc.
             redirectOutputFor(suiteId);
         }
